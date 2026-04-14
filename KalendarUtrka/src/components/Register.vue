@@ -75,12 +75,12 @@ async function handleRegister() {
   isLoading.value = true
 
   try {
-    const response = await fetch(`${API_BASE}/auth/register`, {
+    const response = await fetch(`${API_BASE}/api/users/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        firstName: firstName.value.trim(),
-        lastName: lastName.value.trim(),
+        name: firstName.value.trim(),
+        surname: lastName.value.trim(),
         username: username.value.trim(),
         email: email.value.trim(),
         password: password.value,

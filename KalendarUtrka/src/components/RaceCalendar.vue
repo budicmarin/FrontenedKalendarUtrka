@@ -1,227 +1,101 @@
-<script setup lang="ts">
-import { ref, computed } from 'vue'
+<<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+
 
 interface Race {
-  id: number
-  name: string
-  location: string
-  country: string
-  flag: string
-  date: string
-  endDate: string
-  circuit: string
-  status: 'upcoming' | 'live' | 'completed'
-  round: number
-  winner?: string
-  fastestLap?: string
-  laps?: number
-  distance?: string
-  image?: string
+  _id: string
+  naziv: string
+  datum: string
+  vrijeme: string
+  lokacija: string
+  status?: 'upcoming' | 'live' | 'completed'
 }
 
-const selectedFilter = ref<'all' | 'upcoming' | 'completed' | 'live'>('all')
-const selectedRace = ref<Race | null>(null)
+const races = ref<Race[]>([])
+const isLoading = ref(false)
+const error = ref('')
 const searchQuery = ref('')
+const selectedFilter = ref<'all' | 'upcoming' | 'live' | 'completed'>('all')
+const selectedRace = ref<Race | null>(null)
 
-const races: Race[] = [
-  {
-    id: 1, round: 1, name: 'Bahrain Grand Prix', location: 'Sakhir', country: 'Bahrain', flag: '🇧🇭',
-    date: '2025-03-02', endDate: '2025-03-02', circuit: 'Bahrain International Circuit',
-    status: 'completed', winner: 'Max Verstappen', fastestLap: 'Lewis Hamilton',
-    laps: 57, distance: '308.238 km'
-  },
-  {
-    id: 2, round: 2, name: 'Saudi Arabian Grand Prix', location: 'Jeddah', country: 'Saudi Arabia', flag: '🇸🇦',
-    date: '2025-03-09', endDate: '2025-03-09', circuit: 'Jeddah Corniche Circuit',
-    status: 'completed', winner: 'Charles Leclerc', fastestLap: 'Oscar Piastri',
-    laps: 50, distance: '308.450 km'
-  },
-  {
-    id: 3, round: 3, name: 'Australian Grand Prix', location: 'Melbourne', country: 'Australia', flag: '🇦🇺',
-    date: '2025-03-23', endDate: '2025-03-23', circuit: 'Albert Park Circuit',
-    status: 'completed', winner: 'Lando Norris', fastestLap: 'Max Verstappen',
-    laps: 58, distance: '307.574 km'
-  },
-  {
-    id: 4, round: 4, name: 'Japanese Grand Prix', location: 'Suzuka', country: 'Japan', flag: '🇯🇵',
-    date: '2025-04-06', endDate: '2025-04-06', circuit: 'Suzuka International Racing Course',
-    status: 'completed', winner: 'Max Verstappen', fastestLap: 'Lando Norris',
-    laps: 53, distance: '307.471 km'
-  },
-  {
-    id: 5, round: 5, name: 'Chinese Grand Prix', location: 'Shanghai', country: 'China', flag: '🇨🇳',
-    date: '2025-04-20', endDate: '2025-04-20', circuit: 'Shanghai International Circuit',
-    status: 'upcoming', laps: 56, distance: '305.066 km'
-  },
-  {
-    id: 6, round: 6, name: 'Miami Grand Prix', location: 'Miami', country: 'USA', flag: '🇺🇸',
-    date: '2025-05-04', endDate: '2025-05-04', circuit: 'Miami International Autodrome',
-    status: 'upcoming', laps: 57, distance: '308.326 km'
-  },
-  {
-    id: 7, round: 7, name: 'Emilia Romagna Grand Prix', location: 'Imola', country: 'Italy', flag: '🇮🇹',
-    date: '2025-05-18', endDate: '2025-05-18', circuit: 'Autodromo Enzo e Dino Ferrari',
-    status: 'upcoming', laps: 63, distance: '309.049 km'
-  },
-  {
-    id: 8, round: 8, name: 'Monaco Grand Prix', location: 'Monte Carlo', country: 'Monaco', flag: '🇲🇨',
-    date: '2025-05-25', endDate: '2025-05-25', circuit: 'Circuit de Monaco',
-    status: 'upcoming', laps: 78, distance: '260.286 km'
-  },
-  {
-    id: 9, round: 9, name: 'Canadian Grand Prix', location: 'Montreal', country: 'Canada', flag: '🇨🇦',
-    date: '2025-06-15', endDate: '2025-06-15', circuit: 'Circuit Gilles Villeneuve',
-    status: 'upcoming', laps: 70, distance: '305.270 km'
-  },
-  {
-    id: 10, round: 10, name: 'Spanish Grand Prix', location: 'Barcelona', country: 'Spain', flag: '🇪🇸',
-    date: '2025-06-29', endDate: '2025-06-29', circuit: 'Circuit de Barcelona-Catalunya',
-    status: 'upcoming', laps: 66, distance: '307.236 km'
-  },
-  {
-    id: 11, round: 11, name: 'Austrian Grand Prix', location: 'Spielberg', country: 'Austria', flag: '🇦🇹',
-    date: '2025-07-06', endDate: '2025-07-06', circuit: 'Red Bull Ring',
-    status: 'upcoming', laps: 71, distance: '306.452 km'
-  },
-  {
-    id: 12, round: 12, name: 'British Grand Prix', location: 'Silverstone', country: 'United Kingdom', flag: '🇬🇧',
-    date: '2025-07-06', endDate: '2025-07-06', circuit: 'Silverstone Circuit',
-    status: 'upcoming', laps: 52, distance: '306.198 km'
-  },
-  {
-    id: 13, round: 13, name: 'Hungarian Grand Prix', location: 'Budapest', country: 'Hungary', flag: '🇭🇺',
-    date: '2025-08-03', endDate: '2025-08-03', circuit: 'Hungaroring',
-    status: 'upcoming', laps: 70, distance: '306.630 km'
-  },
-  {
-    id: 14, round: 14, name: 'Belgian Grand Prix', location: 'Spa', country: 'Belgium', flag: '🇧🇪',
-    date: '2025-08-24', endDate: '2025-08-24', circuit: 'Circuit de Spa-Francorchamps',
-    status: 'upcoming', laps: 44, distance: '308.052 km'
-  },
-  {
-    id: 15, round: 15, name: 'Dutch Grand Prix', location: 'Zandvoort', country: 'Netherlands', flag: '🇳🇱',
-    date: '2025-08-31', endDate: '2025-08-31', circuit: 'Circuit Zandvoort',
-    status: 'upcoming', laps: 72, distance: '306.587 km'
-  },
-  {
-    id: 16, round: 16, name: 'Italian Grand Prix', location: 'Monza', country: 'Italy', flag: '🇮🇹',
-    date: '2025-09-07', endDate: '2025-09-07', circuit: 'Autodromo Nazionale Monza',
-    status: 'upcoming', laps: 53, distance: '306.720 km'
-  },
-  {
-    id: 17, round: 17, name: 'Azerbaijan Grand Prix', location: 'Baku', country: 'Azerbaijan', flag: '🇦🇿',
-    date: '2025-09-21', endDate: '2025-09-21', circuit: 'Baku City Circuit',
-    status: 'upcoming', laps: 51, distance: '306.049 km'
-  },
-  {
-    id: 18, round: 18, name: 'Singapore Grand Prix', location: 'Singapore', country: 'Singapore', flag: '🇸🇬',
-    date: '2025-10-05', endDate: '2025-10-05', circuit: 'Marina Bay Street Circuit',
-    status: 'upcoming', laps: 62, distance: '308.706 km'
-  },
-  {
-    id: 19, round: 19, name: 'United States Grand Prix', location: 'Austin', country: 'USA', flag: '🇺🇸',
-    date: '2025-10-19', endDate: '2025-10-19', circuit: 'Circuit of the Americas',
-    status: 'upcoming', laps: 56, distance: '308.405 km'
-  },
-  {
-    id: 20, round: 20, name: 'Mexico City Grand Prix', location: 'Mexico City', country: 'Mexico', flag: '🇲🇽',
-    date: '2025-10-26', endDate: '2025-10-26', circuit: 'Autodromo Hermanos Rodriguez',
-    status: 'upcoming', laps: 71, distance: '305.354 km'
-  },
-  {
-    id: 21, round: 21, name: 'São Paulo Grand Prix', location: 'São Paulo', country: 'Brazil', flag: '🇧🇷',
-    date: '2025-11-09', endDate: '2025-11-09', circuit: 'Autodromo Jose Carlos Pace',
-    status: 'upcoming', laps: 71, distance: '305.879 km'
-  },
-  {
-    id: 22, round: 22, name: 'Las Vegas Grand Prix', location: 'Las Vegas', country: 'USA', flag: '🇺🇸',
-    date: '2025-11-22', endDate: '2025-11-22', circuit: 'Las Vegas Strip Circuit',
-    status: 'upcoming', laps: 50, distance: '309.958 km'
-  },
-  {
-    id: 23, round: 23, name: 'Qatar Grand Prix', location: 'Lusail', country: 'Qatar', flag: '🇶🇦',
-    date: '2025-11-30', endDate: '2025-11-30', circuit: 'Lusail International Circuit',
-    status: 'upcoming', laps: 57, distance: '308.611 km'
-  },
-  {
-    id: 24, round: 24, name: 'Abu Dhabi Grand Prix', location: 'Abu Dhabi', country: 'UAE', flag: '🇦🇪',
-    date: '2025-12-07', endDate: '2025-12-07', circuit: 'Yas Marina Circuit',
-    status: 'upcoming', laps: 58, distance: '306.183 km'
-  },
-]
+async function fetchRaces() {
+  isLoading.value = true
+  error.value = ''
+  try {
+    const res = await fetch('http://localhost:3000/api/races')
+    if (!res.ok) throw new Error('Failed to fetch races')
+    races.value = await res.json()
+  } catch (err) {
+    error.value = 'Nije moguće dohvatiti utrke.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => fetchRaces())
 
 const filteredRaces = computed(() => {
-  return races.filter(race => {
+  return races.value.filter(race => {
     const matchesFilter = selectedFilter.value === 'all' || race.status === selectedFilter.value
-    const matchesSearch = race.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      race.location.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      race.country.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const matchesSearch =
+      race.naziv.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      race.lokacija.toLowerCase().includes(searchQuery.value.toLowerCase())
     return matchesFilter && matchesSearch
   })
 })
 
 const stats = computed(() => ({
-  total: races.length,
-  completed: races.filter(r => r.status === 'completed').length,
-  upcoming: races.filter(r => r.status === 'upcoming').length,
-  live: races.filter(r => r.status === 'live').length,
+  total: races.value.length,
+  completed: races.value.filter(r => r.status === 'completed').length,
+  upcoming: races.value.filter(r => r.status === 'upcoming').length,
+  live: races.value.filter(r => r.status === 'live').length,
 }))
 
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(dateStr).toLocaleDateString('hr-HR', {
+    day: '2-digit', month: 'short', year: 'numeric'
+  })
 }
 
 function getDaysUntil(dateStr: string): number {
-  const today = new Date()
-  const raceDate = new Date(dateStr)
-  const diff = raceDate.getTime() - today.getTime()
+  const diff = new Date(dateStr).getTime() - new Date().getTime()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
 
-function openModal(race: Race) {
-  selectedRace.value = race
-}
-
-function closeModal() {
-  selectedRace.value = null
-}
+function openModal(race: Race) { selectedRace.value = race }
+function closeModal() { selectedRace.value = null }
 
 const filterOptions = [
-  { key: 'all', label: 'All Races' },
-  { key: 'upcoming', label: 'Upcoming' },
-  { key: 'completed', label: 'Completed' },
-  { key: 'live', label: 'Live' },
+  { key: 'all', label: 'Sve' },
+  { key: 'upcoming', label: 'Nadolazeće' },
+  { key: 'completed', label: 'Završene' },
+  { key: 'live', label: 'Uživo' },
 ] as const
 </script>
 
 <template>
   <div class="calendar-page">
-    <!-- Header -->
     <div class="hero">
       <div class="hero-glow"></div>
       <div class="hero-content">
-        <div class="season-badge"></div>
         <h1 class="hero-title">Kalendar trkačkih utrka</h1>
         <p class="hero-subtitle">Kalendar trenutnih utrka u trčanju Istra</p>
-
-        <!-- Stats -->
         <div class="stats-row">
           <div class="stat-card">
             <span class="stat-num">{{ stats.total }}</span>
-            <span class="stat-label">Total Races</span>
+            <span class="stat-label">Ukupno</span>
           </div>
           <div class="stat-card">
             <span class="stat-num accent-green">{{ stats.completed }}</span>
-            <span class="stat-label">Completed</span>
+            <span class="stat-label">Završene</span>
           </div>
           <div class="stat-card">
             <span class="stat-num accent-blue">{{ stats.upcoming }}</span>
-            <span class="stat-label">Upcoming</span>
+            <span class="stat-label">Nadolazeće</span>
           </div>
           <div class="stat-card" v-if="stats.live > 0">
             <span class="stat-num accent-red pulse">{{ stats.live }}</span>
-            <span class="stat-label">Live Now</span>
+            <span class="stat-label">Uživo</span>
           </div>
         </div>
       </div>
@@ -231,13 +105,7 @@ const filterOptions = [
     <div class="controls">
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search races, locations..."
-          class="search-input"
-          id="race-search"
-        />
+        <input v-model="searchQuery" type="text" placeholder="Pretraži utrke..." class="search-input" />
       </div>
       <div class="filter-tabs">
         <button
@@ -245,146 +113,100 @@ const filterOptions = [
           :key="opt.key"
           :class="['filter-btn', { active: selectedFilter === opt.key }]"
           @click="selectedFilter = opt.key"
-          :id="`filter-${opt.key}`"
         >
           {{ opt.label }}
         </button>
       </div>
     </div>
 
-    <!-- Race Grid -->
-    <div class="races-grid">
+    <!-- Loading / Error / Grid -->
+    <div v-if="isLoading" class="loading-state">
+      <div class="spinner-large"></div>
+      <p>Učitavanje utrka...</p>
+    </div>
+
+    <div v-else-if="error" class="error-state">
+      <p>⚠️ {{ error }}</p>
+      <button @click="fetchRaces" class="filter-btn">Pokušaj ponovo</button>
+    </div>
+
+    <div v-else class="races-grid">
       <div
         v-for="race in filteredRaces"
-        :key="race.id"
-        :class="['race-card', `status-${race.status}`]"
+        :key="race._id"
+        :class="['race-card', race.status ? `status-${race.status}` : '']"
         @click="openModal(race)"
-        :id="`race-card-${race.id}`"
       >
-        <!-- Round badge -->
-        <div class="round-badge">R{{ race.round }}</div>
+        <!-- Status dot -->
+        <div :class="['status-dot', race.status ?? 'upcoming']"></div>
 
-        <!-- Status indicator -->
-        <div :class="['status-dot', race.status]"></div>
+        <!-- Naziv -->
+        <h3 class="race-name">{{ race.naziv }}</h3>
 
-        <!-- Country & flag -->
-        <div class="race-flag">{{ race.flag }}</div>
-        <div class="race-country">{{ race.country }}</div>
+        <!-- Lokacija -->
+        <p class="race-location">📍 {{ race.lokacija }}</p>
 
-        <!-- Race name -->
-        <h3 class="race-name">{{ race.name }}</h3>
-        <p class="race-location">📍 {{ race.location }}</p>
-
-        <!-- Date -->
+        <!-- Datum i vrijeme -->
         <div class="race-date-row">
-          <span class="race-date">📅 {{ formatDate(race.date) }}</span>
+          <span class="race-date">📅 {{ formatDate(race.datum) }}</span>
+          <span class="race-date"> 🕐 {{ race.vrijeme }}</span>
         </div>
 
-        <!-- Status label -->
+        <!-- Status footer -->
         <div class="card-footer">
-          <span v-if="race.status === 'completed'" class="status-label completed">
-            ✅ Completed
-          </span>
-          <span v-else-if="race.status === 'live'" class="status-label live">
-            🔴 Live Now
-          </span>
+          <span v-if="race.status === 'completed'" class="status-label completed">✅ Završena</span>
+          <span v-else-if="race.status === 'live'" class="status-label live">🔴 Uživo</span>
           <span v-else class="status-label upcoming">
-            <template v-if="getDaysUntil(race.date) > 0">
-              ⏳ {{ getDaysUntil(race.date) }} days
-            </template>
-            <template v-else>
-              🏁 Today!
-            </template>
-          </span>
-
-          <span v-if="race.status === 'completed' && race.winner" class="winner-chip">
-            🏆 {{ race.winner }}
+            <template v-if="getDaysUntil(race.datum) > 0">⏳ {{ getDaysUntil(race.datum) }} dana</template>
+            <template v-else>🏁 Danas!</template>
           </span>
         </div>
       </div>
 
-      <!-- Empty state -->
       <div v-if="filteredRaces.length === 0" class="empty-state">
-        <div class="empty-icon">🏎️</div>
-        <p>No races found matching your search.</p>
+        <div class="empty-icon">🏃</div>
+        <p>Nema utrka koje odgovaraju pretrazi.</p>
       </div>
     </div>
 
     <!-- Modal -->
     <Transition name="modal">
-      <div v-if="selectedRace" class="modal-overlay" @click.self="closeModal" id="race-modal">
+      <div v-if="selectedRace" class="modal-overlay" @click.self="closeModal">
         <div class="modal-card">
-          <button class="modal-close" @click="closeModal" id="modal-close-btn">✕</button>
-
+          <button class="modal-close" @click="closeModal">✕</button>
           <div class="modal-header">
-            <span class="modal-flag">{{ selectedRace.flag }}</span>
             <div>
-              <div class="modal-round">Round {{ selectedRace.round }}</div>
-              <h2 class="modal-title">{{ selectedRace.name }}</h2>
-              <p class="modal-country">{{ selectedRace.location }}, {{ selectedRace.country }}</p>
+              <h2 class="modal-title">{{ selectedRace.naziv }}</h2>
+              <p class="modal-country">📍 {{ selectedRace.lokacija }}</p>
             </div>
           </div>
-
           <div class="modal-divider"></div>
-
           <div class="modal-info-grid">
             <div class="info-item">
               <span class="info-icon">📅</span>
               <div>
-                <span class="info-label">Race Date</span>
-                <span class="info-value">{{ formatDate(selectedRace.date) }}</span>
+                <span class="info-label">Datum</span>
+                <span class="info-value">{{ formatDate(selectedRace.datum) }}</span>
               </div>
             </div>
             <div class="info-item">
-              <span class="info-icon">🏟️</span>
+              <span class="info-icon">🕐</span>
               <div>
-                <span class="info-label">Circuit</span>
-                <span class="info-value">{{ selectedRace.circuit }}</span>
-              </div>
-            </div>
-            <div class="info-item" v-if="selectedRace.laps">
-              <span class="info-icon">🔁</span>
-              <div>
-                <span class="info-label">Laps</span>
-                <span class="info-value">{{ selectedRace.laps }}</span>
-              </div>
-            </div>
-            <div class="info-item" v-if="selectedRace.distance">
-              <span class="info-icon">📏</span>
-              <div>
-                <span class="info-label">Race Distance</span>
-                <span class="info-value">{{ selectedRace.distance }}</span>
-              </div>
-            </div>
-            <div class="info-item" v-if="selectedRace.winner">
-              <span class="info-icon">🏆</span>
-              <div>
-                <span class="info-label">Winner</span>
-                <span class="info-value accent-gold">{{ selectedRace.winner }}</span>
-              </div>
-            </div>
-            <div class="info-item" v-if="selectedRace.fastestLap">
-              <span class="info-icon">⚡</span>
-              <div>
-                <span class="info-label">Fastest Lap</span>
-                <span class="info-value accent-purple">{{ selectedRace.fastestLap }}</span>
+                <span class="info-label">Vrijeme</span>
+                <span class="info-value">{{ selectedRace.vrijeme }}</span>
               </div>
             </div>
           </div>
-
-          <div class="modal-status-banner" :class="selectedRace.status">
-            <template v-if="selectedRace.status === 'completed'">✅ Race Completed</template>
-            <template v-else-if="selectedRace.status === 'live'">🔴 Race in Progress</template>
-            <template v-else>
-              ⏳ {{ getDaysUntil(selectedRace.date) > 0 ? getDaysUntil(selectedRace.date) + ' days until race' : 'Race Today!' }}
-            </template>
+          <div class="modal-status-banner" :class="selectedRace.status ?? 'upcoming'">
+            <template v-if="selectedRace.status === 'completed'">✅ Utrka završena</template>
+            <template v-else-if="selectedRace.status === 'live'">🔴 Utrka u tijeku</template>
+            <template v-else>⏳ {{ getDaysUntil(selectedRace.datum) > 0 ? getDaysUntil(selectedRace.datum) + ' dana do utrke' : 'Danas!' }}</template>
           </div>
         </div>
       </div>
     </Transition>
   </div>
 </template>
-
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@700;900&display=swap');
 

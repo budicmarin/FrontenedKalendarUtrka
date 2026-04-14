@@ -8,7 +8,7 @@ const emit = defineEmits<{
   (e: 'go-to-register'): void
 }>()
 
-const username = ref('')
+const email= ref('')
 const password = ref('')
 const errorMsg = ref('')
 const isLoading = ref(false)
@@ -20,19 +20,19 @@ const API_BASE = 'http://localhost:3000'
 async function handleLogin() {
   errorMsg.value = ''
 
-  if (!username.value.trim() || !password.value) {
-    errorMsg.value = 'Molimo unesite korisničko ime i lozinku.'
+  if (!email.value.trim() || !password.value) {
+    errorMsg.value = 'Molimo unesite email i lozinku.'
     return
   }
 
   isLoading.value = true
 
   try {
-    const response = await fetch(`${API_BASE}/auth/login`, {
+    const response = await fetch(`${API_BASE}/api/users/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: username.value.trim(),
+        email: email.value.trim(),
         password: password.value,
       }),
     })
@@ -46,9 +46,9 @@ async function handleLogin() {
 
     // Spremi token u localStorage
     localStorage.setItem('auth_token', data.token)
-    localStorage.setItem('auth_username', data.username ?? username.value.trim())
+    localStorage.setItem('auth_username', data.username ?? email.value.trim())
 
-    emit('login-success', data.token, data.username ?? username.value.trim())
+    emit('login-success', data.token, data.username ?? email.value.trim())
   } catch (err) {
     errorMsg.value = 'Nije moguće spojiti se na server. Provjeri je li backend pokrenut.'
   } finally {
@@ -76,16 +76,16 @@ async function handleLogin() {
       <form class="login-form" @submit.prevent="handleLogin" id="login-form" novalidate>
         <!-- Username -->
         <div class="field">
-          <label class="field-label" for="login-username">Korisničko ime</label>
+          <label class="field-label" for="login-email">Email</label>
           <div class="field-wrap">
             <span class="field-icon">👤</span>
             <input
-              id="login-username"
-              v-model="username"
+              id="login-email"
+              v-model="email"
               type="text"
               class="field-input"
-              placeholder="Unesite korisničko ime"
-              autocomplete="username"
+              placeholder="Unesite email"
+              autocomplete="email"
               :disabled="isLoading"
             />
           </div>
