@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+const props = defineProps<{ inModal?: boolean }>()
+
 const emit = defineEmits<{
   (e: 'login-success', token: string, username: string): void
+  (e: 'go-to-register'): void
 }>()
 
 const username = ref('')
@@ -136,8 +139,11 @@ async function handleLogin() {
       </form>
 
       <!-- Footer -->
-      <p class="login-footer">
-        Nemaš račun? Kontaktiraj administratora.
+      <p v-if="!props.inModal" class="login-footer">
+        Nemaš račun?
+        <button type="button" class="link-btn" @click="emit('go-to-register')" id="go-to-register">
+          Registriraj se
+        </button>
       </p>
     </div>
   </div>
