@@ -3,33 +3,39 @@ import { ref, onMounted } from 'vue'
 import Login from './components/Login.vue'
 import Register from './components/Register.vue'
 import RaceCalendar from './components/RaceCalendar.vue'
+import AddRace from './components/AddRace.vue'
 
-type ModalView = 'none' | 'login' | 'register'
+type ModalView = 'none' | 'login' | 'register' | 'add-race'
 
 const isLoggedIn = ref(false)
 const loggedUser = ref('')
 const modalView = ref<ModalView>('none')
-
+const loggedUserId = ref<string | null>(null)
 onMounted(() => {
   const token = localStorage.getItem('auth_token')
   const username = localStorage.getItem('auth_username')
+  const userId = localStorage.getItem('auth_userId')
   if (token && username) {
     isLoggedIn.value = true
     loggedUser.value = username
+    loggedUserId.value = userId
   }
 })
 
-function onLoginSuccess(_token: string, username: string) {
+function onLoginSuccess(_token: string, username: string,userId: string) {
   isLoggedIn.value = true
   loggedUser.value = username
+  loggedUserId.value = userId
   modalView.value = 'none'
 }
 
 function handleLogout() {
   localStorage.removeItem('auth_token')
   localStorage.removeItem('auth_username')
+  localStorage.removeItem('auth_userId')
   isLoggedIn.value = false
   loggedUser.value = ''
+  loggedUserId.value = ''
 }
 
 function closeModal() {
@@ -67,6 +73,7 @@ function onRegisterSuccess() {
           <span>🔑</span> Prijava
         </button>
       </template>
+      
 
       <template v-else>
         <span class="navbar-user">
@@ -77,69 +84,75 @@ function onRegisterSuccess() {
           Odjava
         </button>
       </template>
+      <template v-if="isLoggedIn">
+        <button class="btn-nav btn-nav--primary" @click="modalView = 'add-race'" id="open-add-race-btn">
+          <span>+</span> Dodaj utrku
+        </button>
+      </template>
     </div>
   </nav>
 
   <!-- ── Uvijek prikazuj kalendar ── -->
-  <RaceCalendar />
+  <RaceCalendar :userId="loggedUserId" />
+  
 
   <!-- ── Modal (Login ili Register) ── -->
-  <Transition name="modal">
-    <div
-      v-if="modalView !== 'none'"
-      class="modal-backdrop"
-      @click.self="closeModal"
-      id="auth-modal-backdrop"
-    >
-      <div class="modal-wrapper">
-        <!-- Zatvaranje -->
+  <!-- ── Modal ── -->
+<Transition name="modal">
+  <div
+    v-if="modalView !== 'none'"
+    class="modal-backdrop"
+    @click.self="closeModal"
+    id="auth-modal-backdrop"
+  >
+    <div class="modal-wrapper">
+      <button class="modal-x" @click="closeModal" id="close-modal-btn" aria-label="Zatvori">
+        ✕
+      </button>
+
+      <!-- Tab switcher — samo za login/register -->
+      <div class="modal-tabs" v-if="modalView === 'login' || modalView === 'register'">
         <button
-          class="modal-x"
-          @click="closeModal"
-          id="close-modal-btn"
-          aria-label="Zatvori"
+          :class="['modal-tab', { active: modalView === 'login' }]"
+          @click="modalView = 'login'"
+          id="tab-login"
         >
-          ✕
+          Prijava
         </button>
-
-        <!-- Tab switcher -->
-        <div class="modal-tabs">
-          <button
-            :class="['modal-tab', { active: modalView === 'login' }]"
-            @click="modalView = 'login'"
-            id="tab-login"
-          >
-            Prijava
-          </button>
-          <button
-            :class="['modal-tab', { active: modalView === 'register' }]"
-            @click="modalView = 'register'"
-            id="tab-register"
-          >
-            Registracija
-          </button>
-        </div>
-
-        <!-- Sadržaj -->
-        <Transition name="slide" mode="out-in">
-          <Login
-            v-if="modalView === 'login'"
-            key="login"
-            @login-success="onLoginSuccess"
-            @go-to-register="modalView = 'register'"
-            :in-modal="true"
-          />
-          <Register
-            v-else-if="modalView === 'register'"
-            key="register"
-            @register-success="onRegisterSuccess"
-            @go-to-login="modalView = 'login'"
-            :in-modal="true"
-          />
-        </Transition>
+        <button
+          :class="['modal-tab', { active: modalView === 'register' }]"
+          @click="modalView = 'register'"
+          id="tab-register"
+        >
+          Registracija
+        </button>
       </div>
+
+      <!-- Sadržaj -->
+      <Transition name="slide" mode="out-in">
+        <Login
+          v-if="modalView === 'login'"
+          key="login"
+          @login-success="onLoginSuccess"
+          @go-to-register="modalView = 'register'"
+          :in-modal="true"
+        />
+        <Register
+          v-else-if="modalView === 'register'"
+          key="register"
+          @register-success="onRegisterSuccess"
+          @go-to-login="modalView = 'login'"
+          :in-modal="true"
+        />
+        <AddRace
+          v-else-if="modalView === 'add-race'"
+          key="add-race"
+          @race-added="closeModal"
+        />
+      </Transition>
     </div>
-  </Transition>
+  </div>
+</Transition>
 </template>
 
 <style>

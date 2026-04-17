@@ -4,7 +4,7 @@ import { ref } from 'vue'
 const props = defineProps<{ inModal?: boolean }>()
 
 const emit = defineEmits<{
-  (e: 'login-success', token: string, username: string): void
+  (e: 'login-success', token: string, username: string,userId: string): void
   (e: 'go-to-register'): void
 }>()
 
@@ -47,8 +47,8 @@ async function handleLogin() {
     // Spremi token u localStorage
     localStorage.setItem('auth_token', data.token)
     localStorage.setItem('auth_username', data.username ?? email.value.trim())
-
-    emit('login-success', data.token, data.username ?? email.value.trim())
+    localStorage.setItem('auth_userId', data.id)
+    emit('login-success', data.token, data.username ?? email.value.trim(),data.id)
   } catch (err) {
     errorMsg.value = 'Nije moguće spojiti se na server. Provjeri je li backend pokrenut.'
   } finally {

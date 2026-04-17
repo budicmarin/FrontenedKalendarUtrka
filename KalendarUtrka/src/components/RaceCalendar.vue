@@ -1,6 +1,5 @@
-<<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
 
 interface Race {
   _id: string
@@ -9,22 +8,45 @@ interface Race {
   vrijeme: string
   lokacija: string
   status?: 'upcoming' | 'live' | 'completed'
+  isRegistered?: boolean
 }
+
+// Prima userId od App.vue
+const props = defineProps<{ userId?: string }>()
 
 const races = ref<Race[]>([])
 const isLoading = ref(false)
 const error = ref('')
 const searchQuery = ref('')
-const selectedFilter = ref<'all' | 'upcoming' | 'live' | 'completed'>('all')
+const selectedFilter = ref<'all' | 'upcoming' | 'live' | 'completed' | 'myraces'>('all')
 const selectedRace = ref<Race | null>(null)
+const registeringId = ref<string | null>(null)
 
+// ── Dohvat utrka + prijava korisnika ──────────────────────────
 async function fetchRaces() {
   isLoading.value = true
   error.value = ''
   try {
-    const res = await fetch('http://localhost:3000/api/races')
-    if (!res.ok) throw new Error('Failed to fetch races')
-    races.value = await res.json()
+    const [racesRes, userRacesRes] = await Promise.all([
+      fetch('http://localhost:3000/api/races'),
+      props.userId
+        ? fetch(`http://localhost:3000/api/raceuser/user/${props.userId}`)
+        : Promise.resolve(null),
+    ])
+
+    if (!racesRes.ok) throw new Error('Failed to fetch races')
+    const racesData: Race[] = await racesRes.json()
+
+    let registeredRaceIds = new Set<string>()
+    if (userRacesRes?.ok) {
+      const userRaces = await userRacesRes.json()
+      registeredRaceIds = new Set(userRaces.map((r: any) => r.race_id))
+    }
+
+    races.value = racesData.map(race => ({
+      ...race,
+      isRegistered: registeredRaceIds.has(race._id.toString()),
+    }))
   } catch (err) {
     error.value = 'Nije moguće dohvatiti utrke.'
   } finally {
@@ -32,28 +54,86 @@ async function fetchRaces() {
   }
 }
 
+// Ponovo dohvati kad se korisnik prijavi/odjavi
+watch(() => props.userId, () => fetchRaces())
 onMounted(() => fetchRaces())
 
-const filteredRaces = computed(() => {
-  return races.value.filter(race => {
-    const matchesFilter = selectedFilter.value === 'all' || race.status === selectedFilter.value
+// ── Prijava / odjava s utrke ──────────────────────────────────
+async function toggleRegistration(race: Race, event: Event) {
+  event.stopPropagation()
+  if (!props.userId || registeringId.value) return
+
+  registeringId.value = race._id
+  const wasRegistered = race.isRegistered
+
+  // Optimistično ažuriranje
+  const target = races.value.find(r => r._id === race._id)
+  if (target) target.isRegistered = !wasRegistered
+  if (selectedRace.value?._id === race._id) {
+    selectedRace.value = { ...selectedRace.value, isRegistered: !wasRegistered }
+  }
+
+  try {
+    const method = wasRegistered ? 'DELETE' : 'POST'
+    const res = await fetch(
+      `http://localhost:3000/api/raceuser/race/${race._id}/register`,
+      {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: props.userId }),
+      }
+    )
+    if (!res.ok) throw new Error('Registracija nije uspjela')
+  } catch {
+    // Rollback na grešku
+    if (target) target.isRegistered = wasRegistered
+    if (selectedRace.value?._id === race._id) {
+      selectedRace.value = { ...selectedRace.value, isRegistered: wasRegistered }
+    }
+  } finally {
+    registeringId.value = null
+  }
+}
+
+// ── Status računanje ─────────────────────────────────────────
+function getCalculatedStatus(dateStr: string): 'upcoming' | 'live' | 'completed' {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const raceDate = new Date(dateStr)
+  raceDate.setHours(0, 0, 0, 0)
+  if (raceDate.getTime() < today.getTime()) return 'completed'
+  if (raceDate.getTime() === today.getTime()) return 'live'
+  return 'upcoming'
+}
+
+const processedRaces = computed(() =>
+  races.value.map(race => ({ ...race, status: getCalculatedStatus(race.datum) }))
+)
+
+// ── Filtriranje ──────────────────────────────────────────────
+const filteredRaces = computed(() =>
+  processedRaces.value.filter(race => {
+    if (selectedFilter.value === 'myraces') return race.isRegistered
+    const matchesFilter =
+      selectedFilter.value === 'all' || race.status === selectedFilter.value
     const matchesSearch =
       race.naziv.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       race.lokacija.toLowerCase().includes(searchQuery.value.toLowerCase())
     return matchesFilter && matchesSearch
   })
-})
+)
 
 const stats = computed(() => ({
-  total: races.value.length,
-  completed: races.value.filter(r => r.status === 'completed').length,
-  upcoming: races.value.filter(r => r.status === 'upcoming').length,
-  live: races.value.filter(r => r.status === 'live').length,
+  total: processedRaces.value.length,
+  completed: processedRaces.value.filter(r => r.status === 'completed').length,
+  upcoming: processedRaces.value.filter(r => r.status === 'upcoming').length,
+  live: processedRaces.value.filter(r => r.status === 'live').length,
+  myraces: processedRaces.value.filter(r => r.isRegistered).length,
 }))
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('hr-HR', {
-    day: '2-digit', month: 'short', year: 'numeric'
+    day: '2-digit', month: 'short', year: 'numeric',
   })
 }
 
@@ -70,9 +150,9 @@ const filterOptions = [
   { key: 'upcoming', label: 'Nadolazeće' },
   { key: 'completed', label: 'Završene' },
   { key: 'live', label: 'Uživo' },
+  { key: 'myraces', label: 'Moje utrke' },
 ] as const
 </script>
-
 <template>
   <div class="calendar-page">
     <div class="hero">
@@ -96,6 +176,10 @@ const filterOptions = [
           <div class="stat-card" v-if="stats.live > 0">
             <span class="stat-num accent-red pulse">{{ stats.live }}</span>
             <span class="stat-label">Uživo</span>
+          </div>
+          <div class="stat-card" v-if="stats.myraces > 0">
+            <span class="stat-num accent-purple">{{ stats.myraces }}</span>
+            <span class="stat-label">Moje utrke</span>
           </div>
         </div>
       </div>
@@ -160,6 +244,16 @@ const filterOptions = [
             <template v-if="getDaysUntil(race.datum) > 0">⏳ {{ getDaysUntil(race.datum) }} dana</template>
             <template v-else>🏁 Danas!</template>
           </span>
+          <button
+  v-if="userId"
+  :class="['register-btn', { registered: race.isRegistered }]"
+  :disabled="registeringId === race._id"
+  @click="toggleRegistration(race, $event)"
+>
+  <span v-if="registeringId === race._id">⏳</span>
+  <span v-else-if="race.isRegistered">✅ Prijavljen</span>
+  <span v-else>+ Prijavi se</span>
+</button>
         </div>
       </div>
 
@@ -202,6 +296,16 @@ const filterOptions = [
             <template v-else-if="selectedRace.status === 'live'">🔴 Utrka u tijeku</template>
             <template v-else>⏳ {{ getDaysUntil(selectedRace.datum) > 0 ? getDaysUntil(selectedRace.datum) + ' dana do utrke' : 'Danas!' }}</template>
           </div>
+          <button
+  v-if="userId"
+  :class="['modal-register-btn', { registered: selectedRace?.isRegistered }]"
+  :disabled="registeringId === selectedRace?._id"
+  @click="selectedRace && toggleRegistration(selectedRace, $event)"
+>
+  <span v-if="registeringId === selectedRace?._id">⏳ Učitavanje...</span>
+  <span v-else-if="selectedRace?.isRegistered">❌ Odjavi se s utrke</span>
+  <span v-else>🏃 Prijavi se na utrku</span>
+</button>
         </div>
       </div>
     </Transition>
