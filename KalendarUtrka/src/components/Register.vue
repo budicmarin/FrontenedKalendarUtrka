@@ -18,7 +18,7 @@ const errorMsg = ref('')
 const successMsg = ref('')
 const isLoading = ref(false)
 
-const API_BASE = 'http://localhost:3000'
+const API_BASE = 'https://backendkalendarutrka.onrender.com/'
 
 // ── Validacija lozinke ──
 const passwordStrength = computed(() => {

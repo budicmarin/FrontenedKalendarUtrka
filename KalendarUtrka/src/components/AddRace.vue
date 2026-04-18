@@ -10,7 +10,7 @@ const isLoading = ref(false)
 const errorMsg = ref('')
 const successMsg = ref('')
 
-const API_BASE = 'http://localhost:3000'
+const API_BASE = 'https://backendkalendarutrka.onrender.com/'
 
 async function addRace() {
   errorMsg.value = ''

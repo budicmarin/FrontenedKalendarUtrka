@@ -28,9 +28,9 @@ async function fetchRaces() {
   error.value = ''
   try {
     const [racesRes, userRacesRes] = await Promise.all([
-      fetch('http://localhost:3000/api/races'),
+      fetch('https://backendkalendarutrka.onrender.com/api/races'),
       props.userId
-        ? fetch(`http://localhost:3000/api/raceuser/user/${props.userId}`)
+        ? fetch(`https://backendkalendarutrka.onrender.com/api/raceuser/user/${props.userId}`)
         : Promise.resolve(null),
     ])
 
