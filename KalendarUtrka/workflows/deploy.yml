@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main"] # Provjeri zove li se tvoj glavni branch 'main' ili 'master'
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -21,17 +21,22 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
+          # Putanja do package-lock.json unutar podmape
+          cache-dependency-path: './KalendarUtrka/package-lock.json'
 
       - name: Install dependencies
         run: npm install
+        working-directory: ./KalendarUtrka # VAŽNO: ulazi u podmapu
 
       - name: Build
         run: npm run build
+        working-directory: ./KalendarUtrka # VAŽNO: ulazi u podmapu
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist # Vite sprema build u 'dist' mapu
+          # Vite builda u dist mapu unutar KalendarUtrka
+          path: ./KalendarUtrka/dist
 
       - name: Deploy to GitHub Pages
         id: deployment
