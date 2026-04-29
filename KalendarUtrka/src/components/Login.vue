@@ -15,7 +15,7 @@ const isLoading = ref(false)
 const showPassword = ref(false)
 
 // Promijeni URL ako backend sluša na drugom portu
-const API_BASE = 'https://backendkalendarutrka.onrender.com/'
+const API_BASE = 'https://backendkalendarutrka.onrender.com'
 
 async function handleLogin() {
   errorMsg.value = ''

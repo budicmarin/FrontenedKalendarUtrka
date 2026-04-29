@@ -30,7 +30,7 @@ async function fetchRaces() {
     const [racesRes, userRacesRes] = await Promise.all([
       fetch('https://backendkalendarutrka.onrender.com/api/races'),
       props.userId
-        ? fetch(`https://backendkalendarutrka.onrender.com/api/raceuser/user/${props.userId}`)
+        ? fetch(`http://localhost:3000/api/raceuser/user/${props.userId}`)
         : Promise.resolve(null),
     ])
 
@@ -250,9 +250,9 @@ const filterOptions = [
   :disabled="registeringId === race._id"
   @click="toggleRegistration(race, $event)"
 >
-  <span v-if="registeringId === race._id">⏳</span>
-  <span v-else-if="race.isRegistered">✅ Prijavljen</span>
-  <span v-else>+ Prijavi se</span>
+  <span v-if="registeringId === race._id" class="btn-spinner"></span>
+  <span v-else-if="race.isRegistered" class="btn-inner"><svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Prijavljen</span>
+  <span v-else class="btn-inner"><svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/></svg>Prijavi se</span>
 </button>
         </div>
       </div>
@@ -302,9 +302,9 @@ const filterOptions = [
   :disabled="registeringId === selectedRace?._id"
   @click="selectedRace && toggleRegistration(selectedRace, $event)"
 >
-  <span v-if="registeringId === selectedRace?._id">⏳ Učitavanje...</span>
-  <span v-else-if="selectedRace?.isRegistered">❌ Odjavi se s utrke</span>
-  <span v-else>🏃 Prijavi se na utrku</span>
+  <span v-if="registeringId === selectedRace?._id" class="modal-btn-loading"><span class="btn-spinner"></span>Učitavanje...</span>
+  <span v-else-if="selectedRace?.isRegistered" class="btn-inner"><svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>Odjavi se s utrke</span>
+  <span v-else class="btn-inner"><svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Prijavi se na utrku</span>
 </button>
         </div>
       </div>
@@ -839,6 +839,198 @@ const filterOptions = [
   background: rgba(239, 68, 68, 0.15);
   color: #fca5a5;
   border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* === REGISTER BUTTONS === */
+
+/* Card button */
+.register-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(96, 165, 250, 0.5);
+  background: rgba(96, 165, 250, 0.1);
+  color: #93c5fd;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  margin-left: auto;
+  white-space: nowrap;
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.15);
+}
+
+.register-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.25) 0%, rgba(139, 92, 246, 0.15) 100%);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.register-btn:hover:not(:disabled)::before { opacity: 1; }
+
+.register-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(96, 165, 250, 0.8);
+  box-shadow: 0 4px 20px rgba(96, 165, 250, 0.3);
+  color: #bfdbfe;
+}
+
+.register-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Registered state (card) */
+.register-btn.registered {
+  border-color: rgba(34, 197, 94, 0.5);
+  background: rgba(34, 197, 94, 0.1);
+  color: #4ade80;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.15);
+}
+
+.register-btn.registered::before {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+}
+
+.register-btn.registered:hover:not(:disabled) {
+  border-color: rgba(239, 68, 68, 0.6);
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
+}
+
+.register-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Modal button */
+.modal-register-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 16px 24px;
+  border-radius: 14px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  color: #fff;
+  box-shadow: 0 4px 24px rgba(99, 102, 241, 0.4);
+}
+
+/* Shimmer sweep */
+.modal-register-btn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  transform: skewX(-20deg);
+  transition: left 0s;
+}
+
+.modal-register-btn:hover:not(:disabled)::after {
+  left: 160%;
+  transition: left 0.6s ease;
+}
+
+.modal-register-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.55);
+}
+
+.modal-register-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* Registered state (modal) */
+.modal-register-btn.registered {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(185, 28, 28, 0.1) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
+}
+
+.modal-register-btn.registered:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(185, 28, 28, 0.2) 100%);
+  border-color: rgba(239, 68, 68, 0.7);
+  box-shadow: 0 8px 28px rgba(239, 68, 68, 0.35);
+  color: #fff;
+}
+
+.modal-register-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Shared inner + icon */
+.btn-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  position: relative;
+  z-index: 1;
+}
+
+.btn-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.modal-register-btn .btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.modal-btn-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Shared spinner */
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.modal-register-btn .btn-spinner {
+  width: 18px;
+  height: 18px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* === MODAL TRANSITION === */
