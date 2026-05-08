@@ -4,53 +4,42 @@ import { ref } from 'vue'
 const props = defineProps<{ inModal?: boolean }>()
 
 const emit = defineEmits<{
-  (e: 'login-success', token: string, username: string,userId: string): void
+  (e: 'login-success', token: string, username: string, userId: string): void
   (e: 'go-to-register'): void
 }>()
 
-const email= ref('')
+const email = ref('')
 const password = ref('')
 const errorMsg = ref('')
 const isLoading = ref(false)
 const showPassword = ref(false)
 
-// Promijeni URL ako backend sluša na drugom portu
 const API_BASE = 'https://backendkalendarutrka.onrender.com'
 
 async function handleLogin() {
   errorMsg.value = ''
-
   if (!email.value.trim() || !password.value) {
     errorMsg.value = 'Molimo unesite email i lozinku.'
     return
   }
-
   isLoading.value = true
-
   try {
     const response = await fetch(`${API_BASE}/api/users/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: email.value.trim(),
-        password: password.value,
-      }),
+      body: JSON.stringify({ email: email.value.trim(), password: password.value }),
     })
-
     const data = await response.json()
-
     if (!response.ok) {
       errorMsg.value = data.message || 'Pogrešno korisničko ime ili lozinka.'
       return
     }
-
-    // Spremi token u localStorage
     localStorage.setItem('auth_token', data.token)
     localStorage.setItem('auth_username', data.username ?? email.value.trim())
     localStorage.setItem('auth_userId', data.id)
-    emit('login-success', data.token, data.username ?? email.value.trim(),data.id)
-  } catch (err) {
-    errorMsg.value = 'Nije moguće spojiti se na server. Provjeri je li backend pokrenut.'
+    emit('login-success', data.token, data.username ?? email.value.trim(), data.id)
+  } catch {
+    errorMsg.value = 'Nije moguće spojiti se na server.'
   } finally {
     isLoading.value = false
   }
@@ -59,39 +48,33 @@ async function handleLogin() {
 
 <template>
   <div class="login-page">
-    <!-- Background -->
     <div class="bg-glow bg-glow--red"></div>
     <div class="bg-glow bg-glow--purple"></div>
 
-    <!-- Card -->
     <div class="login-card">
-      <!-- Logo / brand -->
       <div class="brand">
         <div class="brand-icon">🏁</div>
         <h1 class="brand-title">Kalendar Utrka</h1>
-        <p class="brand-subtitle">Prijavite se kako biste vidjeli kalendar</p>
+        <p class="brand-subtitle">Prijavite se u svoj račun</p>
       </div>
 
-      <!-- Form -->
-      <form class="login-form" @submit.prevent="handleLogin" id="login-form" novalidate>
-        <!-- Username -->
+      <form class="form" @submit.prevent="handleLogin" novalidate>
         <div class="field">
           <label class="field-label" for="login-email">Email</label>
           <div class="field-wrap">
-            <span class="field-icon">👤</span>
+            <span class="field-icon">✉️</span>
             <input
               id="login-email"
               v-model="email"
-              type="text"
+              type="email"
               class="field-input"
-              placeholder="Unesite email"
+              placeholder="vasa@email.com"
               autocomplete="email"
               :disabled="isLoading"
             />
           </div>
         </div>
 
-        <!-- Password -->
         <div class="field">
           <label class="field-label" for="login-password">Lozinka</label>
           <div class="field-wrap">
@@ -110,86 +93,66 @@ async function handleLogin() {
               class="toggle-pw"
               @click="showPassword = !showPassword"
               :aria-label="showPassword ? 'Sakrij lozinku' : 'Prikaži lozinku'"
-              id="toggle-password"
-            >
-              {{ showPassword ? '🙈' : '👁️' }}
-            </button>
+            >{{ showPassword ? '🙈' : '👁️' }}</button>
           </div>
         </div>
 
-        <!-- Error message -->
         <Transition name="fade">
-          <div v-if="errorMsg" class="error-msg" role="alert" id="login-error">
-            <span class="error-icon">⚠️</span>
-            {{ errorMsg }}
+          <div v-if="errorMsg" class="error-msg" role="alert">
+            <span>⚠️</span> {{ errorMsg }}
           </div>
         </Transition>
 
-        <!-- Submit -->
-        <button
-          type="submit"
-          class="btn-submit"
-          :disabled="isLoading"
-          id="login-submit"
-        >
+        <button type="submit" class="btn-submit" :disabled="isLoading">
           <span v-if="isLoading" class="spinner"></span>
-          <span v-if="!isLoading">Prijava</span>
-          <span v-else>Prijava u tijeku...</span>
+          <span>{{ isLoading ? 'Prijava u tijeku...' : 'Prijava' }}</span>
         </button>
       </form>
 
-      <!-- Footer -->
-      <p v-if="!props.inModal" class="login-footer">
+      <p v-if="!props.inModal" class="switch-link">
         Nemaš račun?
-        <button type="button" class="link-btn" @click="emit('go-to-register')" id="go-to-register">
-          Registriraj se
-        </button>
+        <button type="button" class="link-btn" @click="emit('go-to-register')">Registriraj se</button>
       </p>
     </div>
   </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-* { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Page ── */
 .login-page {
   min-height: 100vh;
   background: #080b14;
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: clamp(16px, 5vw, 32px);
   position: relative;
   overflow: hidden;
 }
 
-/* ── Background glows ── */
+/* ── Glows ── */
 .bg-glow {
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
+  filter: blur(130px);
   pointer-events: none;
-  opacity: 0.35;
+  opacity: .3;
 }
 
 .bg-glow--red {
-  width: 500px;
-  height: 500px;
+  width: min(500px, 90vw); height: min(500px, 90vw);
   background: radial-gradient(circle, #dc2626 0%, transparent 70%);
-  top: -180px;
-  left: -120px;
+  top: -180px; left: -120px;
 }
 
 .bg-glow--purple {
-  width: 500px;
-  height: 500px;
+  width: min(500px, 90vw); height: min(500px, 90vw);
   background: radial-gradient(circle, #7c3aed 0%, transparent 70%);
-  bottom: -180px;
-  right: -120px;
+  bottom: -180px; right: -120px;
 }
 
 /* ── Card ── */
@@ -198,14 +161,12 @@ async function handleLogin() {
   z-index: 1;
   width: 100%;
   max-width: 420px;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(15,23,42,.88);
+  border: 1px solid rgba(255,255,255,.09);
   border-radius: 24px;
-  padding: 44px 40px 36px;
+  padding: clamp(28px, 6vw, 48px) clamp(22px, 6vw, 40px);
   backdrop-filter: blur(20px);
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.04),
-    0 40px 80px rgba(0,0,0,0.5);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.04), 0 40px 80px rgba(0,0,0,.5);
 }
 
 /* ── Brand ── */
@@ -215,36 +176,37 @@ async function handleLogin() {
 }
 
 .brand-icon {
-  font-size: 3rem;
+  font-size: clamp(2.2rem, 6vw, 3rem);
   line-height: 1;
   margin-bottom: 14px;
+  display: block;
   animation: float 3s ease-in-out infinite;
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-6px); }
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
 }
 
 .brand-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.7rem;
-  font-weight: 900;
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.4rem, 5vw, 1.8rem);
+  font-weight: 800;
   background: linear-gradient(135deg, #fff 0%, #f87171 55%, #c026d3 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin: 0 0 8px;
+  margin-bottom: 8px;
 }
 
 .brand-subtitle {
-  font-size: 0.875rem;
+  font-size: .875rem;
   color: #64748b;
-  margin: 0;
+  font-weight: 300;
 }
 
 /* ── Form ── */
-.login-form {
+.form {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -257,11 +219,11 @@ async function handleLogin() {
 }
 
 .field-label {
-  font-size: 0.8rem;
+  font-size: .75rem;
   font-weight: 600;
   color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: .08em;
 }
 
 .field-wrap {
@@ -273,36 +235,32 @@ async function handleLogin() {
 .field-icon {
   position: absolute;
   left: 14px;
-  font-size: 1rem;
+  font-size: .95rem;
   pointer-events: none;
-  user-select: none;
 }
 
 .field-input {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
   border-radius: 12px;
   padding: 13px 44px 13px 42px;
   color: #e2e8f0;
-  font-size: 0.95rem;
-  font-family: 'Inter', sans-serif;
+  font-size: .9rem;
+  font-family: 'DM Sans', sans-serif;
   outline: none;
-  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  transition: border-color .2s, background .2s, box-shadow .2s;
 }
 
 .field-input::placeholder { color: #334155; }
 
 .field-input:focus {
-  border-color: rgba(220, 38, 38, 0.6);
-  background: rgba(255, 255, 255, 0.07);
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  border-color: rgba(220,38,38,.55);
+  background: rgba(255,255,255,.07);
+  box-shadow: 0 0 0 3px rgba(220,38,38,.1);
 }
 
-.field-input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.field-input:disabled { opacity: .5; cursor: not-allowed; }
 
 .toggle-pw {
   position: absolute;
@@ -310,101 +268,98 @@ async function handleLogin() {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: .95rem;
   padding: 4px;
   color: #64748b;
-  transition: opacity 0.2s;
   line-height: 1;
+  transition: opacity .2s;
 }
 
-.toggle-pw:hover { opacity: 0.75; }
+.toggle-pw:hover { opacity: .7; }
 
 /* ── Error ── */
 .error-msg {
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.3);
+  background: rgba(220,38,38,.1);
+  border: 1px solid rgba(220,38,38,.3);
   border-radius: 10px;
   padding: 11px 14px;
-  font-size: 0.875rem;
+  font-size: .875rem;
   color: #fca5a5;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.error-icon { flex-shrink: 0; }
-
-/* ── Submit button ── */
+/* ── Submit ── */
 .btn-submit {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
   border: none;
   border-radius: 12px;
   color: #fff;
-  font-size: 1rem;
+  font-size: .95rem;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.35);
+  box-shadow: 0 4px 20px rgba(220,38,38,.35);
+  transition: opacity .2s, transform .15s, box-shadow .2s;
   margin-top: 4px;
 }
 
 .btn-submit:hover:not(:disabled) {
-  opacity: 0.9;
+  opacity: .9;
   transform: translateY(-1px);
-  box-shadow: 0 8px 28px rgba(220, 38, 38, 0.45);
+  box-shadow: 0 8px 28px rgba(220,38,38,.45);
 }
 
-.btn-submit:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.btn-submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.btn-submit:disabled { opacity: .6; cursor: not-allowed; }
 
 /* ── Spinner ── */
 .spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,.3);
   border-top-color: #fff;
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin .7s linear infinite;
   flex-shrink: 0;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Footer ── */
-.login-footer {
+.switch-link {
   text-align: center;
-  font-size: 0.8rem;
+  font-size: .82rem;
   color: #334155;
-  margin: 22px 0 0;
+  margin-top: 24px;
 }
 
-/* ── Fade transition ── */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.25s, transform 0.25s;
+.link-btn {
+  background: none;
+  border: none;
+  color: #f87171;
+  font-size: inherit;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 2px;
+  transition: color .2s;
 }
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
-}
+
+.link-btn:hover { color: #fca5a5; }
+
+/* ── Transition ── */
+.fade-enter-active, .fade-leave-active { transition: opacity .25s, transform .25s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-6px); }
 
 /* ── Responsive ── */
-@media (max-width: 480px) {
-  .login-card { padding: 32px 24px 28px; }
-  .brand-title { font-size: 1.4rem; }
+@media (max-width: 440px) {
+  .login-card { border-radius: 20px; }
+  .field-input { font-size: .88rem; }
 }
 </style>

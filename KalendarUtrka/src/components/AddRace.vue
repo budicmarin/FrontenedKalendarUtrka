@@ -10,7 +10,7 @@ const isLoading = ref(false)
 const errorMsg = ref('')
 const successMsg = ref('')
 
-const API_BASE = 'https://backendkalendarutrka.onrender.com/'
+const API_BASE = 'https://backendkalendarutrka.onrender.com'
 
 async function addRace() {
   errorMsg.value = ''
@@ -35,9 +35,9 @@ async function addRace() {
       }),
     })
     if (!res.ok) throw new Error('Greška pri dodavanju.')
-    successMsg.value = 'Utrka uspješno dodana!'
+    successMsg.value = 'Utrka uspješno dodana! ✅'
     naziv.value = lokacija.value = datum.value = vrijeme.value = opis.value = ''
-  } catch (err) {
+  } catch {
     errorMsg.value = 'Nije moguće dodati utrku. Pokušajte ponovo.'
   } finally {
     isLoading.value = false
@@ -46,160 +46,175 @@ async function addRace() {
 </script>
 
 <template>
-  <div class="register-page">
-    <div class="bg-glow bg-glow--blue"></div>
+  <div class="add-race-page">
+    <div class="bg-glow bg-glow--green"></div>
     <div class="bg-glow bg-glow--purple"></div>
 
-    <div class="register-card">
+    <div class="add-race-card">
       <div class="brand">
-        <div class="brand-icon">🏁</div>
+        <div class="brand-icon">➕</div>
         <h1 class="brand-title">Nova utrka</h1>
         <p class="brand-subtitle">Dodajte novu utrku u kalendar</p>
       </div>
 
-      <form class="register-form" @submit.prevent="addRace" novalidate>
+      <form class="form" @submit.prevent="addRace" novalidate>
 
-        <div v-if="errorMsg" class="error-msg">⚠️ {{ errorMsg }}</div>
-        <div v-if="successMsg" class="success-msg">✅ {{ successMsg }}</div>
+        <Transition name="fade">
+          <div v-if="errorMsg" class="error-msg" role="alert"><span>⚠️</span> {{ errorMsg }}</div>
+        </Transition>
+        <Transition name="fade">
+          <div v-if="successMsg" class="success-msg" role="status"><span>🎉</span> {{ successMsg }}</div>
+        </Transition>
 
         <div class="field">
-          <label class="field-label" for="naziv">Naziv<span class="required">*</span></label>
+          <label class="field-label" for="naziv">Naziv utrke <span class="req">*</span></label>
           <div class="field-wrap">
             <span class="field-icon">🏁</span>
             <input id="naziv" v-model="naziv" type="text" class="field-input"
-              placeholder="Naziv utrke" :disabled="isLoading" />
+              placeholder="npr. Pulska x-ica" :disabled="isLoading" />
           </div>
         </div>
 
         <div class="field">
-          <label class="field-label" for="lokacija">Lokacija<span class="required">*</span></label>
+          <label class="field-label" for="lokacija">Lokacija <span class="req">*</span></label>
           <div class="field-wrap">
             <span class="field-icon">📍</span>
             <input id="lokacija" v-model="lokacija" type="text" class="field-input"
-              placeholder="Lokacija utrke" :disabled="isLoading" />
+              placeholder="Grad, država" :disabled="isLoading" />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label" for="datum">Datum <span class="req">*</span></label>
+            <div class="field-wrap">
+              <span class="field-icon">📅</span>
+              <input id="datum" v-model="datum" type="date" class="field-input date-input" :disabled="isLoading" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="vrijeme">Vrijeme <span class="req">*</span></label>
+            <div class="field-wrap">
+              <span class="field-icon">⏰</span>
+              <input id="vrijeme" v-model="vrijeme" type="time" class="field-input date-input" :disabled="isLoading" />
+            </div>
           </div>
         </div>
 
         <div class="field">
-          <label class="field-label" for="datum">Datum<span class="required">*</span></label>
-          <div class="field-wrap">
-            <span class="field-icon">📅</span>
-            <input id="datum" v-model="datum" type="date" class="field-input"
-              :disabled="isLoading" />
-          </div>
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="vrijeme">Vrijeme<span class="required">*</span></label>
-          <div class="field-wrap">
-            <span class="field-icon">⏰</span>
-            <input id="vrijeme" v-model="vrijeme" type="time" class="field-input"
-              :disabled="isLoading" />
-          </div>
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="opis">Opis<span class="required">*</span></label>
-          <div class="field-wrap">
-            <span class="field-icon">📝</span>
-            <input id="opis" v-model="opis" type="text" class="field-input"
-              placeholder="Opis utrke" :disabled="isLoading" />
+          <label class="field-label" for="opis">Opis <span class="req">*</span></label>
+          <div class="field-wrap textarea-wrap">
+            <textarea
+              id="opis"
+              v-model="opis"
+              class="field-input field-textarea"
+              placeholder="Kratak opis utrke, trasa, kategorije..."
+              rows="3"
+              :disabled="isLoading"
+            ></textarea>
           </div>
         </div>
 
         <button type="submit" class="btn-submit" :disabled="isLoading">
           <span v-if="isLoading" class="spinner"></span>
-          <span>{{ isLoading ? 'Dodavanje...' : 'Dodaj utrku' }}</span>
+          <span>{{ isLoading ? 'Dodavanje...' : '+ Dodaj utrku' }}</span>
         </button>
-
       </form>
     </div>
   </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-* { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-.register-page {
+.add-race-page {
   min-height: 100vh;
   background: #080b14;
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: clamp(16px, 5vw, 32px);
   position: relative;
   overflow: hidden;
 }
 
-/* Glows */
+/* ── Glows ── */
 .bg-glow {
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
+  filter: blur(130px);
   pointer-events: none;
-  opacity: 0.3;
+  opacity: .25;
 }
-.bg-glow--blue {
-  width: 500px; height: 500px;
-  background: radial-gradient(circle, #2563eb 0%, transparent 70%);
+
+.bg-glow--green {
+  width: min(500px, 90vw); height: min(500px, 90vw);
+  background: radial-gradient(circle, #16a34a 0%, transparent 70%);
   top: -180px; right: -100px;
 }
+
 .bg-glow--purple {
-  width: 500px; height: 500px;
+  width: min(500px, 90vw); height: min(500px, 90vw);
   background: radial-gradient(circle, #7c3aed 0%, transparent 70%);
   bottom: -180px; left: -120px;
 }
 
-/* Card */
-.register-card {
+/* ── Card ── */
+.add-race-card {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 500px;
-  background: rgba(15, 23, 42, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  max-width: 520px;
+  background: rgba(15,23,42,.88);
+  border: 1px solid rgba(255,255,255,.09);
   border-radius: 24px;
-  padding: 40px 40px 32px;
+  padding: clamp(24px, 5vw, 44px) clamp(20px, 6vw, 40px);
   backdrop-filter: blur(20px);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 40px 80px rgba(0,0,0,0.5);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.04), 0 40px 80px rgba(0,0,0,.5);
 }
 
-/* Brand */
+/* ── Brand ── */
 .brand {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 28px;
 }
+
 .brand-icon {
-  font-size: 2.6rem;
+  font-size: clamp(2rem, 6vw, 2.8rem);
   line-height: 1;
   margin-bottom: 12px;
+  display: block;
   animation: float 3s ease-in-out infinite;
 }
+
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-5px); }
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
 }
+
 .brand-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.6rem;
-  font-weight: 900;
-  background: linear-gradient(135deg, #fff 0%, #60a5fa 55%, #c026d3 100%);
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.35rem, 5vw, 1.7rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #fff 0%, #4ade80 50%, #c026d3 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin: 0 0 6px;
-}
-.brand-subtitle {
-  font-size: 0.875rem;
-  color: #64748b;
-  margin: 0;
+  margin-bottom: 6px;
 }
 
-/* Form */
-.register-form {
+.brand-subtitle {
+  font-size: .875rem;
+  color: #64748b;
+  font-weight: 300;
+}
+
+/* ── Form ── */
+.form {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -208,7 +223,7 @@ async function addRace() {
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 12px;
 }
 
 .field {
@@ -218,14 +233,14 @@ async function addRace() {
 }
 
 .field-label {
-  font-size: 0.78rem;
+  font-size: .73rem;
   font-weight: 600;
   color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: .08em;
 }
 
-.required { color: #f87171; }
+.req { color: #4ade80; }
 
 .field-wrap {
   position: relative;
@@ -233,194 +248,129 @@ async function addRace() {
   align-items: center;
 }
 
+.textarea-wrap { align-items: flex-start; }
+
 .field-icon {
   position: absolute;
   left: 13px;
-  font-size: 0.95rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: .9rem;
   pointer-events: none;
-  user-select: none;
+}
+
+.textarea-wrap .field-icon {
+  top: 14px;
+  transform: none;
 }
 
 .field-input {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
   border-radius: 11px;
-  padding: 12px 42px 12px 40px;
+  padding: 12px 16px 12px 40px;
   color: #e2e8f0;
-  font-size: 0.9rem;
-  font-family: 'Inter', sans-serif;
+  font-size: .88rem;
+  font-family: 'DM Sans', sans-serif;
   outline: none;
-  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  transition: border-color .2s, background .2s, box-shadow .2s;
 }
 
 .field-input::placeholder { color: #334155; }
 
 .field-input:focus {
-  border-color: rgba(96, 165, 250, 0.6);
-  background: rgba(255, 255, 255, 0.07);
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+  border-color: rgba(74,222,128,.45);
+  background: rgba(255,255,255,.07);
+  box-shadow: 0 0 0 3px rgba(74,222,128,.08);
 }
 
-.field-input:disabled { opacity: 0.5; cursor: not-allowed; }
+.field-input:disabled { opacity: .5; cursor: not-allowed; }
 
-.field-input.input-error {
-  border-color: rgba(220, 38, 38, 0.6) !important;
+/* Date/time inputs */
+.date-input {
+  color-scheme: dark;
 }
 
-.toggle-pw {
-  position: absolute;
-  right: 11px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.95rem;
-  padding: 4px;
-  color: #64748b;
-  transition: opacity 0.2s;
-  line-height: 1;
-}
-.toggle-pw:hover { opacity: 0.7; }
-
-/* Strength */
-.strength-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 6px;
+/* Textarea */
+.field-textarea {
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.5;
+  padding-top: 13px;
 }
 
-.strength-bars {
-  display: flex;
-  gap: 5px;
-  flex: 1;
-}
-
-.strength-bar {
-  flex: 1;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.08);
-  transition: background 0.3s;
-}
-
-.strength-bar.weak   { background: #ef4444; }
-.strength-bar.fair   { background: #f59e0b; }
-.strength-bar.good   { background: #3b82f6; }
-.strength-bar.strong { background: #22c55e; }
-
-.strength-text {
-  font-size: 0.72rem;
-  font-weight: 600;
-  min-width: 52px;
-  text-align: right;
-}
-.strength-text.weak   { color: #ef4444; }
-.strength-text.fair   { color: #f59e0b; }
-.strength-text.good   { color: #3b82f6; }
-.strength-text.strong { color: #22c55e; }
-
-/* Hints */
-.field-hint {
-  font-size: 0.78rem;
-  font-weight: 500;
-  margin-top: 2px;
-}
-.field-hint.error { color: #f87171; }
-.field-hint.ok    { color: #4ade80; }
-
-/* Error/Success messages */
+/* ── Messages ── */
 .error-msg, .success-msg {
   border-radius: 10px;
   padding: 11px 14px;
-  font-size: 0.875rem;
+  font-size: .875rem;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .error-msg {
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.3);
+  background: rgba(220,38,38,.1);
+  border: 1px solid rgba(220,38,38,.3);
   color: #fca5a5;
 }
 
 .success-msg {
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(34,197,94,.1);
+  border: 1px solid rgba(34,197,94,.3);
   color: #4ade80;
 }
 
-/* Submit */
+/* ── Submit ── */
 .btn-submit {
   width: 100%;
-  padding: 13px;
-  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  padding: 14px;
+  background: linear-gradient(135deg, #16a34a, #059669);
   border: none;
   border-radius: 12px;
   color: #fff;
-  font-size: 1rem;
+  font-size: .95rem;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 4px 20px rgba(22,163,74,.35);
+  transition: opacity .2s, transform .15s, box-shadow .2s;
   margin-top: 4px;
 }
 
 .btn-submit:hover:not(:disabled) {
-  opacity: 0.9;
+  opacity: .9;
   transform: translateY(-1px);
-  box-shadow: 0 8px 28px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 8px 28px rgba(22,163,74,.45);
 }
 
-.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-submit:disabled { opacity: .5; cursor: not-allowed; }
 
-/* Spinner */
+/* ── Spinner ── */
 .spinner {
-  width: 17px;
-  height: 17px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,.3);
   border-top-color: #fff;
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin .7s linear infinite;
   flex-shrink: 0;
 }
+
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Switch link */
-.switch-link {
-  text-align: center;
-  font-size: 0.82rem;
-  color: #334155;
-  margin: 20px 0 0;
-}
+/* ── Transition ── */
+.fade-enter-active, .fade-leave-active { transition: opacity .2s, transform .2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-5px); }
 
-.link-btn {
-  background: none;
-  border: none;
-  color: #60a5fa;
-  font-size: inherit;
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0 2px;
-  transition: color 0.2s;
-}
-.link-btn:hover { color: #93c5fd; }
-
-/* Fade */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-4px); }
-
-/* Responsive */
+/* ── Responsive ── */
 @media (max-width: 480px) {
-  .register-card { padding: 28px 20px 24px; }
   .field-row { grid-template-columns: 1fr; }
-  .brand-title { font-size: 1.35rem; }
+  .add-race-card { border-radius: 20px; }
+  .field-input { font-size: .86rem; }
 }
 </style>

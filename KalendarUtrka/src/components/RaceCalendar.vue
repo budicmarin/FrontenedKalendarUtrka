@@ -11,7 +11,6 @@ interface Race {
   isRegistered?: boolean
 }
 
-// Prima userId od App.vue
 const props = defineProps<{ userId?: string }>()
 
 const races = ref<Race[]>([])
@@ -22,7 +21,6 @@ const selectedFilter = ref<'all' | 'upcoming' | 'live' | 'completed' | 'myraces'
 const selectedRace = ref<Race | null>(null)
 const registeringId = ref<string | null>(null)
 
-// ── Dohvat utrka + prijava korisnika ──────────────────────────
 async function fetchRaces() {
   isLoading.value = true
   error.value = ''
@@ -30,19 +28,16 @@ async function fetchRaces() {
     const [racesRes, userRacesRes] = await Promise.all([
       fetch('https://backendkalendarutrka.onrender.com/api/races'),
       props.userId
-        ? fetch(`http://localhost:3000/api/raceuser/user/${props.userId}`)
+        ? fetch(`https://backendkalendarutrka.onrender.com/api/raceuser/user/${props.userId}`)
         : Promise.resolve(null),
     ])
-
     if (!racesRes.ok) throw new Error('Failed to fetch races')
     const racesData: Race[] = await racesRes.json()
-
     let registeredRaceIds = new Set<string>()
     if (userRacesRes?.ok) {
       const userRaces = await userRacesRes.json()
       registeredRaceIds = new Set(userRaces.map((r: any) => r.race_id))
     }
-
     races.value = racesData.map(race => ({
       ...race,
       isRegistered: registeredRaceIds.has(race._id.toString()),
@@ -54,53 +49,37 @@ async function fetchRaces() {
   }
 }
 
-// Ponovo dohvati kad se korisnik prijavi/odjavi
 watch(() => props.userId, () => fetchRaces())
 onMounted(() => fetchRaces())
 
-// ── Prijava / odjava s utrke ──────────────────────────────────
 async function toggleRegistration(race: Race, event: Event) {
   event.stopPropagation()
   if (!props.userId || registeringId.value) return
-
   registeringId.value = race._id
   const wasRegistered = race.isRegistered
-
-  // Optimistično ažuriranje
   const target = races.value.find(r => r._id === race._id)
   if (target) target.isRegistered = !wasRegistered
-  if (selectedRace.value?._id === race._id) {
+  if (selectedRace.value?._id === race._id)
     selectedRace.value = { ...selectedRace.value, isRegistered: !wasRegistered }
-  }
-
   try {
     const method = wasRegistered ? 'DELETE' : 'POST'
     const res = await fetch(
-      `http://localhost:3000/api/raceuser/race/${race._id}/register`,
-      {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: props.userId }),
-      }
+      `https://backendkalendarutrka.onrender.com/api/raceuser/race/${race._id}/register`,
+      { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: props.userId }) }
     )
     if (!res.ok) throw new Error('Registracija nije uspjela')
   } catch {
-    // Rollback na grešku
     if (target) target.isRegistered = wasRegistered
-    if (selectedRace.value?._id === race._id) {
+    if (selectedRace.value?._id === race._id)
       selectedRace.value = { ...selectedRace.value, isRegistered: wasRegistered }
-    }
   } finally {
     registeringId.value = null
   }
 }
 
-// ── Status računanje ─────────────────────────────────────────
 function getCalculatedStatus(dateStr: string): 'upcoming' | 'live' | 'completed' {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const raceDate = new Date(dateStr)
-  raceDate.setHours(0, 0, 0, 0)
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const raceDate = new Date(dateStr); raceDate.setHours(0, 0, 0, 0)
   if (raceDate.getTime() < today.getTime()) return 'completed'
   if (raceDate.getTime() === today.getTime()) return 'live'
   return 'upcoming'
@@ -110,12 +89,10 @@ const processedRaces = computed(() =>
   races.value.map(race => ({ ...race, status: getCalculatedStatus(race.datum) }))
 )
 
-// ── Filtriranje ──────────────────────────────────────────────
 const filteredRaces = computed(() =>
   processedRaces.value.filter(race => {
     if (selectedFilter.value === 'myraces') return race.isRegistered
-    const matchesFilter =
-      selectedFilter.value === 'all' || race.status === selectedFilter.value
+    const matchesFilter = selectedFilter.value === 'all' || race.status === selectedFilter.value
     const matchesSearch =
       race.naziv.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       race.lokacija.toLowerCase().includes(searchQuery.value.toLowerCase())
@@ -132,14 +109,11 @@ const stats = computed(() => ({
 }))
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('hr-HR', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  })
+  return new Date(dateStr).toLocaleDateString('hr-HR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 function getDaysUntil(dateStr: string): number {
-  const diff = new Date(dateStr).getTime() - new Date().getTime()
-  return Math.ceil(diff / (1000 * 60 * 60 * 24))
+  return Math.ceil((new Date(dateStr).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
 }
 
 function openModal(race: Race) { selectedRace.value = race }
@@ -153,13 +127,18 @@ const filterOptions = [
   { key: 'myraces', label: 'Moje utrke' },
 ] as const
 </script>
+
 <template>
   <div class="calendar-page">
+
+    <!-- HERO -->
     <div class="hero">
       <div class="hero-glow"></div>
       <div class="hero-content">
+        <p class="hero-eyebrow">🏃 Istra &amp; okolica</p>
         <h1 class="hero-title">Kalendar trkačkih utrka</h1>
-        <p class="hero-subtitle">Kalendar trenutnih utrka u trčanju Istra</p>
+        <p class="hero-sub">Sve nadolazeće i završene utrke na jednom mjestu</p>
+
         <div class="stats-row">
           <div class="stat-card">
             <span class="stat-num">{{ stats.total }}</span>
@@ -185,7 +164,7 @@ const filterOptions = [
       </div>
     </div>
 
-    <!-- Controls -->
+    <!-- CONTROLS -->
     <div class="controls">
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
@@ -197,63 +176,59 @@ const filterOptions = [
           :key="opt.key"
           :class="['filter-btn', { active: selectedFilter === opt.key }]"
           @click="selectedFilter = opt.key"
-        >
-          {{ opt.label }}
-        </button>
+        >{{ opt.label }}</button>
       </div>
     </div>
 
-    <!-- Loading / Error / Grid -->
-    <div v-if="isLoading" class="loading-state">
+    <!-- LOADING -->
+    <div v-if="isLoading" class="state-box">
       <div class="spinner-large"></div>
       <p>Učitavanje utrka...</p>
     </div>
 
-    <div v-else-if="error" class="error-state">
-      <p>⚠️ {{ error }}</p>
-      <button @click="fetchRaces" class="filter-btn">Pokušaj ponovo</button>
+    <!-- ERROR -->
+    <div v-else-if="error" class="state-box">
+      <p class="state-icon">⚠️</p>
+      <p>{{ error }}</p>
+      <button @click="fetchRaces" class="filter-btn retry-btn">Pokušaj ponovo</button>
     </div>
 
+    <!-- GRID -->
     <div v-else class="races-grid">
       <div
         v-for="race in filteredRaces"
         :key="race._id"
-        :class="['race-card', race.status ? `status-${race.status}` : '']"
+        :class="['race-card', `status-${race.status ?? 'upcoming'}`]"
         @click="openModal(race)"
       >
-        <!-- Status dot -->
-        <div :class="['status-dot', race.status ?? 'upcoming']"></div>
-
-        <!-- Naziv -->
-        <h3 class="race-name">{{ race.naziv }}</h3>
-
-        <!-- Lokacija -->
-        <p class="race-location">📍 {{ race.lokacija }}</p>
-
-        <!-- Datum i vrijeme -->
-        <div class="race-date-row">
-          <span class="race-date">📅 {{ formatDate(race.datum) }}</span>
-          <span class="race-date"> 🕐 {{ race.vrijeme }}</span>
+        <div class="card-top">
+          <div :class="['status-dot', race.status ?? 'upcoming']"></div>
+          <h3 class="race-name">{{ race.naziv }}</h3>
         </div>
 
-        <!-- Status footer -->
+        <div class="card-meta">
+          <span class="meta-row">📍 {{ race.lokacija }}</span>
+          <span class="meta-row">📅 {{ formatDate(race.datum) }} &nbsp;🕐 {{ race.vrijeme }}</span>
+        </div>
+
         <div class="card-footer">
-          <span v-if="race.status === 'completed'" class="status-label completed">✅ Završena</span>
-          <span v-else-if="race.status === 'live'" class="status-label live">🔴 Uživo</span>
-          <span v-else class="status-label upcoming">
+          <span v-if="race.status === 'completed'" class="badge badge-completed">✅ Završena</span>
+          <span v-else-if="race.status === 'live'" class="badge badge-live">🔴 Uživo</span>
+          <span v-else class="badge badge-upcoming">
             <template v-if="getDaysUntil(race.datum) > 0">⏳ {{ getDaysUntil(race.datum) }} dana</template>
             <template v-else>🏁 Danas!</template>
           </span>
+
           <button
-  v-if="userId"
-  :class="['register-btn', { registered: race.isRegistered }]"
-  :disabled="registeringId === race._id"
-  @click="toggleRegistration(race, $event)"
->
-  <span v-if="registeringId === race._id" class="btn-spinner"></span>
-  <span v-else-if="race.isRegistered" class="btn-inner"><svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Prijavljen</span>
-  <span v-else class="btn-inner"><svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/></svg>Prijavi se</span>
-</button>
+            v-if="userId"
+            :class="['reg-btn', { registered: race.isRegistered }]"
+            :disabled="registeringId === race._id"
+            @click="toggleRegistration(race, $event)"
+          >
+            <span v-if="registeringId === race._id" class="btn-spinner"></span>
+            <span v-else-if="race.isRegistered">✓ Prijavljen</span>
+            <span v-else>+ Prijavi se</span>
+          </button>
         </div>
       </div>
 
@@ -263,198 +238,183 @@ const filterOptions = [
       </div>
     </div>
 
-    <!-- Modal -->
+    <!-- MODAL -->
     <Transition name="modal">
       <div v-if="selectedRace" class="modal-overlay" @click.self="closeModal">
         <div class="modal-card">
           <button class="modal-close" @click="closeModal">✕</button>
-          <div class="modal-header">
-            <div>
-              <h2 class="modal-title">{{ selectedRace.naziv }}</h2>
-              <p class="modal-country">📍 {{ selectedRace.lokacija }}</p>
-            </div>
-          </div>
+
+          <h2 class="modal-title">{{ selectedRace.naziv }}</h2>
+          <p class="modal-loc">📍 {{ selectedRace.lokacija }}</p>
           <div class="modal-divider"></div>
+
           <div class="modal-info-grid">
             <div class="info-item">
-              <span class="info-icon">📅</span>
-              <div>
-                <span class="info-label">Datum</span>
-                <span class="info-value">{{ formatDate(selectedRace.datum) }}</span>
-              </div>
+              <span class="info-label">Datum</span>
+              <span class="info-val">{{ formatDate(selectedRace.datum) }}</span>
             </div>
             <div class="info-item">
-              <span class="info-icon">🕐</span>
-              <div>
-                <span class="info-label">Vrijeme</span>
-                <span class="info-value">{{ selectedRace.vrijeme }}</span>
-              </div>
+              <span class="info-label">Vrijeme</span>
+              <span class="info-val">{{ selectedRace.vrijeme }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Lokacija</span>
+              <span class="info-val">{{ selectedRace.lokacija }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Status</span>
+              <span class="info-val">
+                <span v-if="selectedRace.status === 'completed'" class="badge badge-completed">✅ Završena</span>
+                <span v-else-if="selectedRace.status === 'live'" class="badge badge-live">🔴 Uživo</span>
+                <span v-else class="badge badge-upcoming">⏳ {{ getDaysUntil(selectedRace.datum) > 0 ? getDaysUntil(selectedRace.datum) + ' dana' : 'Danas!' }}</span>
+              </span>
             </div>
           </div>
-          <div class="modal-status-banner" :class="selectedRace.status ?? 'upcoming'">
-            <template v-if="selectedRace.status === 'completed'">✅ Utrka završena</template>
-            <template v-else-if="selectedRace.status === 'live'">🔴 Utrka u tijeku</template>
-            <template v-else>⏳ {{ getDaysUntil(selectedRace.datum) > 0 ? getDaysUntil(selectedRace.datum) + ' dana do utrke' : 'Danas!' }}</template>
-          </div>
+
           <button
-  v-if="userId"
-  :class="['modal-register-btn', { registered: selectedRace?.isRegistered }]"
-  :disabled="registeringId === selectedRace?._id"
-  @click="selectedRace && toggleRegistration(selectedRace, $event)"
->
-  <span v-if="registeringId === selectedRace?._id" class="modal-btn-loading"><span class="btn-spinner"></span>Učitavanje...</span>
-  <span v-else-if="selectedRace?.isRegistered" class="btn-inner"><svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>Odjavi se s utrke</span>
-  <span v-else class="btn-inner"><svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Prijavi se na utrku</span>
-</button>
+            v-if="userId"
+            :class="['modal-reg-btn', { registered: selectedRace.isRegistered }]"
+            :disabled="registeringId === selectedRace._id"
+            @click="toggleRegistration(selectedRace, $event)"
+          >
+            <span v-if="registeringId === selectedRace._id" class="btn-spinner modal-spinner"></span>
+            <span v-else-if="selectedRace.isRegistered">✕ Odjavi se s utrke</span>
+            <span v-else>⚡ Prijavi se na utrku</span>
+          </button>
         </div>
       </div>
     </Transition>
   </div>
 </template>
+
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap');
 
-* {
-  box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── BASE ── */
 .calendar-page {
   min-height: 100vh;
   background: #080b14;
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   color: #e2e8f0;
-  padding-bottom: 60px;
+  padding-bottom: 80px;
 }
 
-/* === HERO === */
+/* ── HERO ── */
 .hero {
   position: relative;
-  padding: 80px 24px 60px;
   text-align: center;
+  padding: 80px 24px 64px;
   overflow: hidden;
 }
 
 .hero-glow {
   position: absolute;
-  top: -100px;
-  left: 50%;
+  top: -120px; left: 50%;
   transform: translateX(-50%);
-  width: 700px;
-  height: 400px;
-  background: radial-gradient(ellipse, rgba(220, 38, 38, 0.25) 0%, rgba(124, 58, 237, 0.12) 50%, transparent 70%);
+  width: min(800px, 120vw);
+  height: 480px;
+  background: radial-gradient(ellipse, rgba(220,38,38,.2) 0%, rgba(124,58,237,.1) 45%, transparent 70%);
   pointer-events: none;
 }
 
 .hero-content {
   position: relative;
   z-index: 1;
-  max-width: 800px;
+  max-width: 860px;
   margin: 0 auto;
 }
 
-.season-badge {
-  display: inline-block;
-  background: rgba(220, 38, 38, 0.15);
-  border: 1px solid rgba(220, 38, 38, 0.4);
-  color: #f87171;
-  font-size: 0.8rem;
+.hero-eyebrow {
+  font-size: .75rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: .12em;
   text-transform: uppercase;
-  padding: 6px 18px;
-  border-radius: 999px;
-  margin-bottom: 20px;
+  color: #f87171;
+  margin-bottom: 14px;
 }
 
 .hero-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(2.4rem, 6vw, 4.5rem);
-  font-weight: 900;
-  background: linear-gradient(135deg, #ffffff 0%, #f87171 50%, #c026d3 100%);
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 800;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #fff 0%, #f87171 50%, #c026d3 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin: 0 0 16px;
-  line-height: 1.1;
+  margin-bottom: 14px;
 }
 
-.hero-subtitle {
-  color: #94a3b8;
-  font-size: 1.05rem;
-  margin: 0 0 40px;
-  font-weight: 400;
+.hero-sub {
+  font-size: clamp(.85rem, 2vw, 1rem);
+  color: #64748b;
+  font-weight: 300;
+  margin-bottom: 48px;
 }
 
-/* === STATS === */
+/* ── STATS ── */
 .stats-row {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .stat-card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
   border-radius: 16px;
-  padding: 20px 28px;
+  padding: 18px clamp(16px, 4vw, 32px);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   backdrop-filter: blur(8px);
-  transition: transform 0.2s, border-color 0.2s;
+  transition: transform .2s, border-color .2s;
+  min-width: 90px;
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255,255,255,0.15);
-}
+.stat-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,.15); }
 
 .stat-num {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 2rem;
-  font-weight: 700;
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 800;
   color: #fff;
+  line-height: 1;
 }
 
 .stat-label {
-  font-size: 0.75rem;
-  color: #64748b;
+  font-size: .68rem;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: .1em;
+  color: #475569;
   font-weight: 500;
 }
 
-.accent-green { color: #22c55e !important; }
-.accent-blue  { color: #60a5fa !important; }
-.accent-red   { color: #f87171 !important; }
-.accent-gold  { color: #fbbf24 !important; }
-.accent-purple{ color: #c084fc !important; }
+.accent-green  { color: #22c55e !important; }
+.accent-blue   { color: #60a5fa !important; }
+.accent-red    { color: #f87171 !important; }
+.accent-purple { color: #c084fc !important; }
 
-.pulse {
-  animation: pulse 1.4s infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
+.pulse { animation: pulse-anim 1.4s ease-in-out infinite; }
+@keyframes pulse-anim { 0%,100%{opacity:1} 50%{opacity:.45} }
 
-/* === CONTROLS === */
+/* ── CONTROLS ── */
 .controls {
-  max-width: 1200px;
-  margin: 0 auto 40px;
-  padding: 0 24px;
+  max-width: 1140px;
+  margin: 0 auto 36px;
+  padding: 0 clamp(16px, 4vw, 32px);
   display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .search-wrap {
-  flex: 1;
-  min-width: 220px;
   position: relative;
+  width: 100%;
 }
 
 .search-icon {
@@ -462,27 +422,27 @@ const filterOptions = [
   left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 1rem;
+  font-size: .95rem;
   pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  padding: 12px 16px 12px 44px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px;
+  padding: 14px 18px 14px 46px;
   color: #e2e8f0;
-  font-size: 0.95rem;
-  font-family: 'Inter', sans-serif;
+  font-size: .9rem;
+  font-family: 'DM Sans', sans-serif;
   outline: none;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color .2s, background .2s;
 }
 
-.search-input::placeholder { color: #475569; }
+.search-input::placeholder { color: #334155; }
 .search-input:focus {
-  border-color: rgba(220, 38, 38, 0.5);
-  background: rgba(255,255,255,0.07);
+  border-color: rgba(220,38,38,.5);
+  background: rgba(255,255,255,.07);
 }
 
 .filter-tabs {
@@ -492,191 +452,219 @@ const filterOptions = [
 }
 
 .filter-btn {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #94a3b8;
-  padding: 10px 20px;
-  border-radius: 10px;
-  font-size: 0.875rem;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.1);
+  color: #64748b;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: .82rem;
   font-weight: 500;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+  transition: all .2s;
+  white-space: nowrap;
 }
 
-.filter-btn:hover {
-  background: rgba(255,255,255,0.09);
-  color: #e2e8f0;
-}
-
+.filter-btn:hover { border-color: rgba(255,255,255,.2); color: #e2e8f0; }
 .filter-btn.active {
-  background: rgba(220, 38, 38, 0.18);
-  border-color: rgba(220, 38, 38, 0.5);
+  background: linear-gradient(135deg, rgba(220,38,38,.2), rgba(192,38,211,.15));
+  border-color: rgba(220,38,38,.5);
   color: #f87171;
 }
 
-/* === RACE GRID === */
+/* ── GRID ── */
 .races-grid {
-  max-width: 1200px;
+  max-width: 1140px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 clamp(16px, 4vw, 32px);
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 16px;
 }
 
+/* ── CARD ── */
 .race-card {
   position: relative;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(15,23,42,.85);
+  border: 1px solid rgba(255,255,255,.08);
   border-radius: 20px;
-  padding: 28px 24px 22px;
+  padding: 22px 20px 18px;
   cursor: pointer;
-  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+  transition: transform .25s, box-shadow .25s, border-color .25s;
+  backdrop-filter: blur(10px);
   overflow: hidden;
 }
 
-.race-card::before {
+.race-card::after {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 3px;
+  height: 2px;
   background: linear-gradient(90deg, #dc2626, #c026d3);
   opacity: 0;
-  transition: opacity 0.25s;
+  transition: opacity .25s;
 }
 
 .race-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-  border-color: rgba(220, 38, 38, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0,0,0,.45);
+  border-color: rgba(220,38,38,.25);
 }
 
-.race-card:hover::before {
-  opacity: 1;
-}
-
-.race-card.status-completed { border-color: rgba(34, 197, 94, 0.15); }
-.race-card.status-live { border-color: rgba(239, 68, 68, 0.4); animation: live-glow 2s infinite; }
+.race-card:hover::after { opacity: 1; }
+.race-card.status-completed { border-color: rgba(34,197,94,.12); }
+.race-card.status-live { border-color: rgba(239,68,68,.35); animation: live-glow 2s ease-in-out infinite; }
 
 @keyframes live-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.1); }
-  50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.3); }
+  0%,100% { box-shadow: 0 0 16px rgba(239,68,68,.08); }
+  50%      { box-shadow: 0 0 36px rgba(239,68,68,.25); }
 }
 
-.round-badge {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  padding: 3px 10px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #64748b;
-  letter-spacing: 0.05em;
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .status-dot {
-  position: absolute;
-  top: 22px;
-  left: 24px;
-  width: 8px;
-  height: 8px;
+  width: 9px; height: 9px;
   border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
 }
 
 .status-dot.completed { background: #22c55e; }
-.status-dot.upcoming  { background: #60a5fa; }
-.status-dot.live      { background: #ef4444; animation: pulse 1.2s infinite; }
+.status-dot.upcoming  { background: #60a5fa; box-shadow: 0 0 7px rgba(96,165,250,.5); }
+.status-dot.live      { background: #ef4444; animation: dot-pulse 1.2s ease-in-out infinite; }
 
-.race-flag {
-  font-size: 2.8rem;
-  margin-bottom: 8px;
-  margin-top: 10px;
-  line-height: 1;
-}
-
-.race-country {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #64748b;
-  margin-bottom: 10px;
+@keyframes dot-pulse {
+  0%,100% { box-shadow: 0 0 4px rgba(239,68,68,.4); }
+  50%      { box-shadow: 0 0 12px rgba(239,68,68,.8); }
 }
 
 .race-name {
-  font-size: 1.05rem;
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(.95rem, 2.5vw, 1.1rem);
   font-weight: 700;
   color: #f1f5f9;
-  margin: 0 0 6px;
   line-height: 1.3;
 }
 
-.race-location {
-  font-size: 0.85rem;
-  color: #64748b;
-  margin: 0 0 14px;
-}
-
-.race-date-row {
+.card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   margin-bottom: 16px;
 }
 
-.race-date {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #94a3b8;
+.meta-row {
+  font-size: .82rem;
+  color: #64748b;
+  display: block;
 }
 
 .card-footer {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  border-top: 1px solid rgba(255,255,255,0.06);
+  justify-content: space-between;
+  gap: 8px;
   padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  flex-wrap: wrap;
 }
 
-.status-label {
-  font-size: 0.78rem;
+/* ── BADGES ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .72rem;
   font-weight: 600;
-  padding: 4px 12px;
+  padding: 4px 10px;
   border-radius: 999px;
-}
-
-.status-label.completed {
-  background: rgba(34, 197, 94, 0.12);
-  color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.25);
-}
-
-.status-label.upcoming {
-  background: rgba(96, 165, 250, 0.12);
-  color: #93c5fd;
-  border: 1px solid rgba(96, 165, 250, 0.25);
-}
-
-.status-label.live {
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-}
-
-.winner-chip {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.2);
-  padding: 3px 10px;
-  border-radius: 999px;
+  letter-spacing: .02em;
   white-space: nowrap;
 }
 
-/* === EMPTY STATE === */
+.badge-completed { background: rgba(34,197,94,.12);  color: #4ade80; border: 1px solid rgba(34,197,94,.2); }
+.badge-upcoming  { background: rgba(96,165,250,.12);  color: #93c5fd; border: 1px solid rgba(96,165,250,.2); }
+.badge-live      { background: rgba(239,68,68,.14);   color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+
+/* ── REG BTN (card) ── */
+.reg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(96,165,250,.4);
+  background: rgba(96,165,250,.08);
+  color: #93c5fd;
+  font-size: .75rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+
+.reg-btn:hover:not(:disabled) {
+  background: rgba(96,165,250,.18);
+  border-color: #60a5fa;
+}
+
+.reg-btn.registered {
+  border-color: rgba(34,197,94,.4);
+  background: rgba(34,197,94,.08);
+  color: #4ade80;
+}
+
+.reg-btn.registered:hover:not(:disabled) {
+  background: rgba(239,68,68,.1);
+  border-color: rgba(239,68,68,.5);
+  color: #fca5a5;
+}
+
+.reg-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ── SPINNERS ── */
+.btn-spinner {
+  display: inline-block;
+  width: 13px; height: 13px;
+  border: 2px solid rgba(255,255,255,.25);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+.modal-spinner { width: 18px; height: 18px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── EMPTY / LOADING / ERROR ── */
+.state-box {
+  text-align: center;
+  padding: 80px 24px;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.state-icon { font-size: 2rem; }
+
+.spinner-large {
+  width: 44px; height: 44px;
+  border: 3px solid rgba(255,255,255,.08);
+  border-top-color: #f87171;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin-bottom: 8px;
+}
+
+.retry-btn { margin-top: 4px; }
+
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
@@ -684,97 +672,72 @@ const filterOptions = [
   color: #475569;
 }
 
-.empty-icon {
-  font-size: 3.5rem;
-  margin-bottom: 16px;
-}
+.empty-icon { font-size: 3rem; margin-bottom: 12px; }
 
-/* === MODAL === */
+/* ── MODAL OVERLAY ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,.72);
+  backdrop-filter: blur(8px);
   z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: clamp(12px, 4vw, 24px);
 }
 
 .modal-card {
-  background: #0f1729;
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #0d1526;
+  border: 1px solid rgba(255,255,255,.11);
   border-radius: 24px;
+  padding: clamp(24px, 5vw, 40px);
   max-width: 520px;
   width: 100%;
-  padding: 36px;
+  max-height: 90dvh;
+  overflow-y: auto;
   position: relative;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+  box-shadow: 0 40px 100px rgba(0,0,0,.65);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.1) transparent;
 }
 
 .modal-close {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #94a3b8;
-  width: 36px;
-  height: 36px;
+  top: 18px; right: 18px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  color: #64748b;
+  width: 34px; height: 34px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: .9rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, color 0.2s;
+  transition: all .2s;
 }
 
-.modal-close:hover {
-  background: rgba(220, 38, 38, 0.2);
-  color: #f87171;
-}
-
-.modal-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
-.modal-flag {
-  font-size: 3.5rem;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.modal-round {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #f87171;
-  margin-bottom: 6px;
-}
+.modal-close:hover { background: rgba(220,38,38,.2); color: #f87171; }
 
 .modal-title {
-  font-size: 1.4rem;
-  font-weight: 700;
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.3rem, 4vw, 1.7rem);
+  font-weight: 800;
   color: #f1f5f9;
-  margin: 0 0 4px;
-  font-family: 'Inter', sans-serif;
+  margin-bottom: 6px;
+  padding-right: 40px;
 }
 
-.modal-country {
-  font-size: 0.875rem;
+.modal-loc {
   color: #64748b;
-  margin: 0;
+  font-size: .87rem;
+  margin-bottom: 24px;
 }
 
 .modal-divider {
   height: 1px;
-  background: rgba(255,255,255,0.07);
+  background: rgba(255,255,255,.07);
   margin-bottom: 24px;
 }
 
@@ -787,278 +750,84 @@ const filterOptions = [
 
 .info-item {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.info-icon {
-  font-size: 1.2rem;
-  flex-shrink: 0;
-  margin-top: 2px;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .info-label {
-  display: block;
-  font-size: 0.72rem;
+  font-size: .68rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: .1em;
   color: #475569;
-  margin-bottom: 3px;
   font-weight: 600;
 }
 
-.info-value {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
+.info-val {
+  font-size: .9rem;
+  font-weight: 500;
   color: #cbd5e1;
-  line-height: 1.3;
 }
 
-.modal-status-banner {
-  text-align: center;
-  padding: 12px;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.modal-status-banner.completed {
-  background: rgba(34, 197, 94, 0.1);
-  color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.2);
-}
-
-.modal-status-banner.upcoming {
-  background: rgba(96, 165, 250, 0.1);
-  color: #93c5fd;
-  border: 1px solid rgba(96, 165, 250, 0.2);
-}
-
-.modal-status-banner.live {
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-/* === REGISTER BUTTONS === */
-
-/* Card button */
-.register-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 6px 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(96, 165, 250, 0.5);
-  background: rgba(96, 165, 250, 0.1);
-  color: #93c5fd;
-  font-size: 0.78rem;
-  font-weight: 700;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  letter-spacing: 0.04em;
-  overflow: hidden;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  text-transform: uppercase;
-  margin-left: auto;
-  white-space: nowrap;
-  box-shadow: 0 0 12px rgba(96, 165, 250, 0.15);
-}
-
-.register-btn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(96, 165, 250, 0.25) 0%, rgba(139, 92, 246, 0.15) 100%);
-  opacity: 0;
-  transition: opacity 0.25s;
-}
-
-.register-btn:hover:not(:disabled)::before { opacity: 1; }
-
-.register-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: rgba(96, 165, 250, 0.8);
-  box-shadow: 0 4px 20px rgba(96, 165, 250, 0.3);
-  color: #bfdbfe;
-}
-
-.register-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-/* Registered state (card) */
-.register-btn.registered {
-  border-color: rgba(34, 197, 94, 0.5);
-  background: rgba(34, 197, 94, 0.1);
-  color: #4ade80;
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.15);
-}
-
-.register-btn.registered::before {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
-}
-
-.register-btn.registered:hover:not(:disabled) {
-  border-color: rgba(239, 68, 68, 0.6);
-  background: rgba(239, 68, 68, 0.1);
-  color: #fca5a5;
-  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
-}
-
-.register-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Modal button */
-.modal-register-btn {
-  position: relative;
+/* ── MODAL REG BTN ── */
+.modal-reg-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   width: 100%;
-  margin-top: 20px;
-  padding: 16px 24px;
+  padding: 15px 24px;
   border-radius: 14px;
   border: none;
-  font-size: 1rem;
+  font-size: .95rem;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   cursor: pointer;
-  letter-spacing: 0.02em;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  transition: all .3s;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
   color: #fff;
-  box-shadow: 0 4px 24px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 24px rgba(99,102,241,.35);
 }
 
-/* Shimmer sweep */
-.modal-register-btn::after {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 60%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
-  transform: skewX(-20deg);
-  transition: left 0s;
-}
-
-.modal-register-btn:hover:not(:disabled)::after {
-  left: 160%;
-  transition: left 0.6s ease;
-}
-
-.modal-register-btn:hover:not(:disabled) {
+.modal-reg-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.55);
+  box-shadow: 0 8px 32px rgba(99,102,241,.5);
 }
 
-.modal-register-btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.3);
-}
-
-/* Registered state (modal) */
-.modal-register-btn.registered {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(185, 28, 28, 0.1) 100%);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+.modal-reg-btn.registered {
+  background: linear-gradient(135deg, rgba(239,68,68,.2), rgba(185,28,28,.15));
+  border: 1px solid rgba(239,68,68,.4);
   color: #fca5a5;
-  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
+  box-shadow: 0 4px 20px rgba(239,68,68,.2);
 }
 
-.modal-register-btn.registered:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(185, 28, 28, 0.2) 100%);
-  border-color: rgba(239, 68, 68, 0.7);
-  box-shadow: 0 8px 28px rgba(239, 68, 68, 0.35);
-  color: #fff;
+.modal-reg-btn.registered:hover:not(:disabled) {
+  box-shadow: 0 8px 28px rgba(239,68,68,.35);
 }
 
-.modal-register-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none;
-}
+.modal-reg-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
 
-/* Shared inner + icon */
-.btn-inner {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  position: relative;
-  z-index: 1;
-}
+/* ── TRANSITION ── */
+.modal-enter-active, .modal-leave-active { transition: opacity .25s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
+.modal-enter-active .modal-card, .modal-leave-active .modal-card { transition: transform .25s ease; }
+.modal-enter-from .modal-card { transform: scale(.93) translateY(16px); }
+.modal-leave-to .modal-card   { transform: scale(.93) translateY(16px); }
 
-.btn-icon {
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-}
-
-.modal-register-btn .btn-icon {
-  width: 18px;
-  height: 18px;
-}
-
-.modal-btn-loading {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Shared spinner */
-.btn-spinner {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: currentColor;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-
-.modal-register-btn .btn-spinner {
-  width: 18px;
-  height: 18px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* === MODAL TRANSITION === */
-.modal-enter-active, .modal-leave-active {
-  transition: opacity 0.25s ease;
-}
-.modal-enter-from, .modal-leave-to {
-  opacity: 0;
-}
-.modal-enter-active .modal-card,
-.modal-leave-active .modal-card {
-  transition: transform 0.25s ease;
-}
-.modal-enter-from .modal-card {
-  transform: scale(0.92) translateY(20px);
-}
-.modal-leave-to .modal-card {
-  transform: scale(0.92) translateY(20px);
-}
-
-/* === RESPONSIVE === */
-@media (max-width: 640px) {
-  .hero { padding: 60px 16px 40px; }
-  .races-grid { padding: 0 16px; grid-template-columns: 1fr; }
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  .hero { padding: 60px 16px 48px; }
+  .stats-row { gap: 8px; }
+  .stat-card { padding: 14px 16px; min-width: 80px; }
   .controls { padding: 0 16px; }
-  .modal-card { padding: 24px 20px; }
+  .races-grid { padding: 0 16px; gap: 12px; }
+  .filter-tabs { gap: 6px; }
+  .filter-btn { padding: 8px 14px; font-size: .78rem; }
   .modal-info-grid { grid-template-columns: 1fr; }
-  .stats-row { gap: 10px; }
-  .stat-card { padding: 14px 20px; }
+  .card-footer { gap: 6px; }
+}
+
+@media (max-width: 380px) {
+  .hero-title { font-size: 1.7rem; }
+  .race-card { padding: 18px 16px 14px; }
 }
 </style>
