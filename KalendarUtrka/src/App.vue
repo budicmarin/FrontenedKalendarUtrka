@@ -60,33 +60,35 @@ function onRegisterSuccess() {
 
 <template>
   <nav class="navbar">
-    <div class="navbar-brand">
-      <span class="brand-emoji">🏁</span>
-      <span class="brand-text">Kalendar Utrka</span>
-    </div>
+    <div class="navbar-inner">
+      <div class="navbar-brand">
+        <span class="brand-emoji">🏁</span>
+        <span class="brand-text">Kalendar Utrka</span>
+      </div>
 
-    <div class="navbar-right">
-      <template v-if="!isLoggedIn">
-        <button class="btn-nav btn-nav--ghost" @click="modalView = 'register'" id="open-register-btn">
-          Registracija
-        </button>
-        <button class="btn-nav btn-nav--primary" @click="modalView = 'login'" id="open-login-btn">
-          <span>🔑</span> Prijava
-        </button>
-      </template>
+      <div class="navbar-right">
+        <template v-if="!isLoggedIn">
+          <button class="btn-nav btn-nav--ghost" @click="modalView = 'register'" id="open-register-btn">
+            Registracija
+          </button>
+          <button class="btn-nav btn-nav--primary" @click="modalView = 'login'" id="open-login-btn">
+            <span>🔑</span> Prijava
+          </button>
+        </template>
 
-      <template v-else>
-        <span class="navbar-user">
-          <span class="user-dot"></span>
-          {{ loggedUser }}
-        </span>
-        <button class="btn-logout" @click="handleLogout" id="logout-btn">
-          Odjava
-        </button>
-        <button class="btn-nav btn-nav--primary" @click="modalView = 'add-race'" id="open-add-race-btn">
-          <span>+</span> Dodaj utrku
-        </button>
-      </template>
+        <template v-else>
+          <span class="navbar-user">
+            <span class="user-dot"></span>
+            {{ loggedUser }}
+          </span>
+          <button class="btn-logout" @click="handleLogout" id="logout-btn">
+            Odjava
+          </button>
+          <button class="btn-nav btn-nav--primary" @click="modalView = 'add-race'" id="open-add-race-btn">
+            <span>+</span> Dodaj utrku
+          </button>
+        </template>
+      </div>
     </div>
   </nav>
 
@@ -158,23 +160,36 @@ html, body {
   position: sticky;
   top: 0;
   z-index: 40;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 28px;
-  height: 62px;
+  width: 100%;
+  min-height: 62px;
+  padding: 0 clamp(16px, 4vw, 28px);
   background: rgba(8, 11, 20, 0.9);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow: 0 1px 30px rgba(0, 0, 0, 0.4);
   font-family: 'Inter', sans-serif;
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+.navbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1180px;
+  min-height: 62px;
+  margin: 0 auto;
+  gap: 16px;
+  min-width: 0;
 }
 
 .navbar-brand {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .brand-emoji { font-size: 1.4rem; line-height: 1; }
@@ -188,12 +203,16 @@ html, body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
 }
 
 .navbar-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 /* Nav gumbi */
@@ -209,6 +228,8 @@ html, body {
   font-family: 'Inter', sans-serif;
   transition: all 0.2s;
   white-space: nowrap;
+  min-height: 40px;
+  min-width: 0;
 }
 
 .btn-nav--ghost {
@@ -242,6 +263,11 @@ html, body {
   font-size: 0.875rem;
   font-weight: 500;
   color: #94a3b8;
+  min-width: 0;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-dot {
@@ -263,6 +289,8 @@ html, body {
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: all 0.2s;
+  min-height: 38px;
+  white-space: nowrap;
 }
 .btn-logout:hover {
   background: rgba(220,38,38,0.12);
@@ -281,18 +309,28 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: clamp(12px, 4vw, 20px);
 }
 
 .modal-wrapper {
   position: relative;
   width: 100%;
   max-width: 500px;
+  max-height: calc(100dvh - 24px);
   background: rgba(10, 15, 28, 0.98);
   border: 1px solid rgba(255,255,255,0.09);
   border-radius: 24px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   box-shadow: 0 40px 100px rgba(0,0,0,0.7);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.14) transparent;
+}
+
+.modal-wrapper :deep(.add-race-page) {
+  min-height: unset;
+  background: transparent;
+  padding: 0;
 }
 
 /* Zatvaranje */
@@ -372,7 +410,8 @@ html, body {
 }
 
 .modal-wrapper :deep(.login-card),
-.modal-wrapper :deep(.register-card) {
+.modal-wrapper :deep(.register-card),
+.modal-wrapper :deep(.add-race-card) {
   max-width: 100%;
   border-radius: 0;
   border: none;
@@ -401,4 +440,60 @@ html, body {
 .slide-enter-active, .slide-leave-active { transition: opacity 0.2s, transform 0.2s; }
 .slide-enter-from { opacity: 0; transform: translateX(20px); }
 .slide-leave-to   { opacity: 0; transform: translateX(-20px); }
+
+@media (max-width: 720px) {
+  .navbar {
+    padding: 10px 14px;
+  }
+
+  .navbar-inner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .navbar-right {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .btn-nav,
+  .btn-logout {
+    width: 100%;
+    justify-content: center;
+    padding-inline: 14px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .navbar-user {
+    grid-column: 1 / -1;
+    max-width: 100%;
+  }
+
+  .modal-wrapper :deep(.login-card),
+  .modal-wrapper :deep(.register-card),
+  .modal-wrapper :deep(.add-race-card) {
+    padding: 28px 22px 24px;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand-text {
+    font-size: 0.9rem;
+  }
+
+  .btn-nav,
+  .btn-logout {
+    font-size: 0.8rem;
+    padding-inline: 8px;
+  }
+
+  .modal-tabs {
+    padding-right: 44px;
+  }
+}
 </style>

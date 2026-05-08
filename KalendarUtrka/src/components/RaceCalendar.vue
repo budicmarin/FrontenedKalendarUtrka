@@ -299,14 +299,18 @@ const filterOptions = [
   font-family: 'DM Sans', sans-serif;
   color: #e2e8f0;
   padding-bottom: 80px;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
 }
 
 /* ── HERO ── */
 .hero {
   position: relative;
   text-align: center;
-  padding: 80px 24px 64px;
+  padding: clamp(56px, 8vw, 88px) clamp(16px, 4vw, 32px) clamp(44px, 7vw, 64px);
   overflow: hidden;
+  max-width: 100vw;
 }
 
 .hero-glow {
@@ -322,8 +326,9 @@ const filterOptions = [
 .hero-content {
   position: relative;
   z-index: 1;
-  max-width: 860px;
+  width: min(100%, 860px);
   margin: 0 auto;
+  min-width: 0;
 }
 
 .hero-eyebrow {
@@ -337,7 +342,7 @@ const filterOptions = [
 
 .hero-title {
   font-family: 'Syne', sans-serif;
-  font-size: clamp(2rem, 6vw, 4rem);
+  font-size: clamp(2rem, 7vw, 4rem);
   font-weight: 800;
   line-height: 1.1;
   background: linear-gradient(135deg, #fff 0%, #f87171 50%, #c026d3 100%);
@@ -345,6 +350,9 @@ const filterOptions = [
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 14px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-wrap: balance;
 }
 
 .hero-sub {
@@ -352,6 +360,7 @@ const filterOptions = [
   color: #64748b;
   font-weight: 300;
   margin-bottom: 48px;
+  overflow-wrap: anywhere;
 }
 
 /* ── STATS ── */
@@ -374,6 +383,8 @@ const filterOptions = [
   backdrop-filter: blur(8px);
   transition: transform .2s, border-color .2s;
   min-width: 90px;
+  flex: 1 1 120px;
+  max-width: 180px;
 }
 
 .stat-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,.15); }
@@ -410,6 +421,9 @@ const filterOptions = [
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
+  width: 100%;
+  max-width: min(1140px, 100vw);
 }
 
 .search-wrap {
@@ -428,6 +442,7 @@ const filterOptions = [
 
 .search-input {
   width: 100%;
+  min-width: 0;
   background: rgba(255,255,255,.05);
   border: 1px solid rgba(255,255,255,.1);
   border-radius: 14px;
@@ -449,6 +464,8 @@ const filterOptions = [
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: center;
+  min-width: 0;
 }
 
 .filter-btn {
@@ -463,6 +480,9 @@ const filterOptions = [
   font-family: 'DM Sans', sans-serif;
   transition: all .2s;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .filter-btn:hover { border-color: rgba(255,255,255,.2); color: #e2e8f0; }
@@ -474,11 +494,12 @@ const filterOptions = [
 
 /* ── GRID ── */
 .races-grid {
-  max-width: 1140px;
+  max-width: min(1140px, 100vw);
+  width: 100%;
   margin: 0 auto;
   padding: 0 clamp(16px, 4vw, 32px);
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: 16px;
 }
 
@@ -493,6 +514,7 @@ const filterOptions = [
   transition: transform .25s, box-shadow .25s, border-color .25s;
   backdrop-filter: blur(10px);
   overflow: hidden;
+  min-width: 0;
 }
 
 .race-card::after {
@@ -549,6 +571,7 @@ const filterOptions = [
   font-weight: 700;
   color: #f1f5f9;
   line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .card-meta {
@@ -562,6 +585,7 @@ const filterOptions = [
   font-size: .82rem;
   color: #64748b;
   display: block;
+  overflow-wrap: anywhere;
 }
 
 .card-footer {
@@ -585,6 +609,7 @@ const filterOptions = [
   border-radius: 999px;
   letter-spacing: .02em;
   white-space: nowrap;
+  max-width: 100%;
 }
 
 .badge-completed { background: rgba(34,197,94,.12);  color: #4ade80; border: 1px solid rgba(34,197,94,.2); }
@@ -607,6 +632,7 @@ const filterOptions = [
   cursor: pointer;
   transition: all .2s;
   white-space: nowrap;
+  min-height: 32px;
 }
 
 .reg-btn:hover:not(:disabled) {
@@ -766,6 +792,7 @@ const filterOptions = [
   font-size: .9rem;
   font-weight: 500;
   color: #cbd5e1;
+  overflow-wrap: anywhere;
 }
 
 /* ── MODAL REG BTN ── */
@@ -815,19 +842,31 @@ const filterOptions = [
 
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
-  .hero { padding: 60px 16px 48px; }
+  .hero { padding-top: 48px; }
+  .hero-title {
+    max-width: 340px;
+    margin-inline: auto;
+    font-size: clamp(1.8rem, 9vw, 2.2rem);
+  }
+  .hero-sub {
+    max-width: 320px;
+    margin-inline: auto;
+    margin-bottom: 40px;
+  }
   .stats-row { gap: 8px; }
-  .stat-card { padding: 14px 16px; min-width: 80px; }
+  .stat-card { padding: 14px 16px; min-width: 0; flex-basis: calc(50% - 8px); }
   .controls { padding: 0 16px; }
   .races-grid { padding: 0 16px; gap: 12px; }
   .filter-tabs { gap: 6px; }
-  .filter-btn { padding: 8px 14px; font-size: .78rem; }
+  .filter-btn { flex: 1 1 calc(50% - 6px); padding: 8px 10px; font-size: .78rem; }
   .modal-info-grid { grid-template-columns: 1fr; }
-  .card-footer { gap: 6px; }
+  .card-footer { align-items: stretch; gap: 8px; }
+  .reg-btn { justify-content: center; }
 }
 
 @media (max-width: 380px) {
   .hero-title { font-size: 1.7rem; }
   .race-card { padding: 18px 16px 14px; }
+  .filter-btn { flex-basis: 100%; }
 }
 </style>
